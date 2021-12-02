@@ -1,40 +1,55 @@
-
+from tkinter import *
+from tkinter import ttk
+from tkinter import filedialog as fd
 import re
 
 # notes and bugs
 # need a way to throw error if theres no match
 # function name gets separated bc it has spaces (sa sample)
 
-# return a list of every line from input file
-def read_file(filename):
-	try:
-		file = open(filename, "r")
-
-		# open and tokenize file
-		data = file.read()
-
-		# need na basahin yung whole file tas tsaka itokenize kasi nakakaloka iignore yung multiline comments pag sineparate kaagad
-=======
-from tkinter import *
-from tkinter import ttk
-from tkinter import filedialog as fd
-
 ##### GLOBAL VARIABLES #####
 code = ""
 
 ##### FUNCTIONS #####
 def read_file(filename):
-	contents = "" 
 
 	file = open(filename, "r")
 
-
-	for line in file:
-		contents += line
-
+	contents = file.read() 
+	
 	file.close()
 
-	return data
+	return contents
+
+def show_file_contents(contents):
+	text_editor.delete(1.0, END) # make sure text editor is clear
+	text_editor.insert(1.0, contents) # print contents to GUI
+
+def select_file():
+	file_path = fd.askopenfilename(title="Open a LOLCODE file..", filetypes=(("lol files", ".lol"),)) # open a file dialog that shows .lol files only
+	if len(file_path) == 0: return # no file selected
+
+	file_contents = read_file(file_path) # get the file contents
+	show_file_contents(file_contents) # show file contents to GUI
+
+def remove_comments(src_code):
+	# remove multiline comments
+	src_code = re.sub("(^|\n| )OBTW[^TLDR]*TLDR( |\n|$)", "", src_code)
+	
+	# remove single line comments
+	src_code = re.sub("(^|\n| )BTW.*", "", src_code)
+
+	return src_code
+
+def remove_whitespaces(src_code):
+	temp = []
+
+	for line in src_code:
+		line = line.strip() # remove leading and trailing whitespaces
+		if line != "":
+			temp.append(line) # append line only if it is an empty string
+
+	return temp
 
 def findMatch(line):
 	# lagay yung mga regex here
@@ -122,29 +137,12 @@ def tokenize(code):
 			# we check if there's an OBTW and TLDR in there maybe? tas throw error if meron
 			# this does not match lines na may OBTW na kasama with other lines
 
-	# remove multiline comments
-	code = re.sub("(OBTW).*?(TLDR\n)", "", code, flags=re.DOTALL)
-	# remove single line comments
-	code = re.sub("(.)*BTW(.)*(\n)*", "", code)
-
 	# tokenize
 	# assuming na di required ang newline sa YARN
-
-	# separate every line
-	lines = code.split("\n")
-
+	print(code)
 	tokens = []
 	# iterate through every line
-	for line in lines:
-		#literal = re.search("(?<=['\"]).*?(?=['\"])", line)
-		#yarn = ""
-
-		# if there's a string literal:
-		#if literal:
-			# remove the string literal and replace them with a space
-		#	newline = re.sub("(?<=['\"]).*?(?=['\"])", " ", line)
-		#	yarn = literal.group()
-
+	for line in code:
 		# separate everything, ignore all spaces
 		# check keywords by:
 		# creating regex just as a string
@@ -155,49 +153,22 @@ def tokenize(code):
 		# we look for matches and put them in the list token
 		token = findMatch(line)
 
-
 		# iterate through every token for this line and append them to the final tokens list
 		for t in token:
 			# add to dictionary? IDK
 			tokens.append(t)
 
-
-		#separated = line.split()
-		#print(separated)
-
-		# add each element of separated to tokens
-		#for e in separated:
-			# this will add the string literal in between the ""
-		#	if e=="\"" and yarn!="":
-		#		tokens.append(e)
-		#		tokens.append(yarn)
-		#		yarn = ""
-
-		#	tokens.append(e)
-
 	print(tokens)
-
-
-
-src_code_lines = read_file("files/sample.lol")
-tokenize(src_code_lines)
-=======
-def show_file_contents(contents):
-	text_editor.delete(1.0, END) # make sure text editor is clear
-	text_editor.insert(1.0, contents) # print contents to GUI
-
-def select_file():
-	file_path = fd.askopenfilename(title="Open a LOLCODE file..", filetypes=(("lol files", ".lol"),)) # open a file dialog that shows .lol files only
-	if len(file_path) == 0: return # no file selected
-
-	file_contents = read_file(file_path) # get the file contents
-	show_file_contents(file_contents) # show file contents to GUI
 
 def run():
 	global code
 
-	code = text_editor.get(1.0,'end-1c')
+	code = text_editor.get(1.0,'end-1c') # get the input from Text widget
+	code = remove_comments(code)
 	code = code.split("\n")
+	code = remove_whitespaces(code)
+	tokenize(code)
+
 
 ##### GUI #####
 # instantiate tkinter window
