@@ -88,25 +88,26 @@ def findMatch(line):
 
 	regEx = [numbr, numbar, yarn, strdelimiter, troof, typeLiteral, howizi, hai, kthxbye, ihasa, itz, r, sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof, bothof, eitherof, wonof, notKey, anyof, allof, bothsaem, diffrint, smoosh, maek, a, isnowa, visible, gimmeh, orly, yarly, mebbe, nowai, oic, wtf, omg, omgwtf, iminyr, uppin, nerfin, yr, til, wile, imouttayr, foundyr, ifusayso, gtfo, mkay, an, identifier]
 
-	print(line)
+	# problem: both saem gets separated the second time. no clue why
 	allTokens = []
 	while True:
 		for r in regEx:
 			# search for the token in r
 			token = re.search(r"^([ ]*"+r+r"[ ]*)", line)
 			if token:
-				print("Match: ", token.group())
-				# remove the match from the line
+				# remove the match from the line and remove the spaces
 				unspacedtoken = token.group().strip(r"^([ ]+)([ ]+)$")
-				line = line.strip(token.group())
+				line = line.replace(token.group(), "")
+
+				# append to allTokens
 				allTokens.append(unspacedtoken)
+
+				# end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
+				break
 
 		# check if line is wala na
 		if re.match(r"^(\s*\n*)$", line):
 			break
-
-
-	print("The line: '", line, "'")
 
 	return allTokens
 
