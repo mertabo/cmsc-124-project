@@ -91,7 +91,7 @@ def findMatch(line):
 	allTokens = []
 	for r in regEx:
 		# search for the token in r
-		token = re.search("(?:^| )"+r+"(?:$| )", line)
+		token = re.search(r, line)
 		if token:
 			# remove the match from the line
 			line = re.sub(token.group(), "", line)
