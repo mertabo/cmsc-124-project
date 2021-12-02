@@ -119,6 +119,7 @@ def findMatch(line):
 	regEx = [numbr, numbar, yarn, strdelimiter, troof, typeLiteral, howizi, hai, kthxbye, ihasa, itz, r, sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof, bothof, eitherof, wonof, notKey, anyof, allof, bothsaem, diffrint, smoosh, maek, a, isnowa, visible, gimmeh, orly, yarly, mebbe, nowai, oic, wtf, omg, omgwtf, iminyr, uppin, nerfin, yr, til, wile, imouttayr, foundyr, ifusayso, gtfo, mkay, an, identifier]
 
 	# problem: both saem gets separated the second time. no clue why
+	# note: PANO PAG WALANG MATCH AT ALL
 	allTokens = []
 	while True:
 		for r in regEx:
@@ -133,6 +134,15 @@ def findMatch(line):
 				allTokens.append(unspacedtoken)
 
 				# end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
+				break
+			else:
+				# lagay mo yung first token here
+				unmatched = line.split()[0]
+				line = line.replace(unmatched, "")
+
+				# append to allTokens
+				allTokens.append(unmatched)
+
 				break
 
 		# check if line is wala na
