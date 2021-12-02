@@ -1,5 +1,9 @@
 import re
 
+# notes and bugs
+# need a way to throw error if theres no match
+# function name gets separated bc it has spaces (sa sample)
+
 # return a list of every line from input file
 def read_file(filename):
 	try:
@@ -92,9 +96,6 @@ def findMatch(line):
 			# remove the match from the line
 			line = re.sub(token.group(), "", line)
 			allTokens.append(token.group())
-
-	# append the words/lines that have no match
-	allTokens.append(line)
 
 	return allTokens
 
