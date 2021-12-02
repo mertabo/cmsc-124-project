@@ -79,7 +79,7 @@ def findMatch(line):
 	ifusayso = "IF[ ]+U[ ]+SAY[ ]+SO"
 	gtfo = "GTFO"
 	mkay = "MKAY"
-	an = "\bAN\b"
+	an = "AN"
 	iiz = "I[ ]+IZ"
 
 	# identifiers
@@ -91,11 +91,12 @@ def findMatch(line):
 	allTokens = []
 	for r in regEx:
 		# search for the token in r
-		token = re.search(r, line)
+		token = re.search("^([ ]*"+r+"[ ]*)", line)
 		if token:
 			# remove the match from the line
+			unspacedtoken = re.sub("^([ ]+)([ ]+)$", "", token.group())
 			line = re.sub(token.group(), "", line)
-			allTokens.append(token.group())
+			allTokens.append(unspacedtoken)
 
 	return allTokens
 
@@ -138,6 +139,7 @@ def tokenize(code):
 
 		# we look for matches and put them in the list token
 		token = findMatch(line)
+
 
 		# iterate through every token for this line and append them to the final tokens list
 		for t in token:
