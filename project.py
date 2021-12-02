@@ -55,78 +55,89 @@ def findMatch(line):
 	# lagay yung mga regex here
 
 	# literals
-	numbr = "-?[0-9]+"
-	numbar = "-?[0-9]+[\\.][0-9]*"
-	yarn = "(?<=['\"]).*(?=['\"])"
-	strdelimiter = "['\"]"
-	troof = "(WIN|FAIL)"
-	typeLiteral = "(NUMBR|NUMBAR|YARN|TROOF|NOOB)"
+	numbr = r"-?[0-9]+"
+	numbar = r"-?[0-9]+[\.][0-9]*"
+	yarn = r"(?<=['\"]).*(?=['\"])"
+	strdelimiter = r"['\"]"
+	troof = r"(WIN|FAIL)"
+	typeLiteral = r"(NUMBR|NUMBAR|YARN|TROOF|NOOB)"
 
 	# keywords
-	howizi = "HOW[ ]+IZ[ ]+I"
-	hai = "HAI"
-	kthxbye = "KTHXBYE"
-	ihasa = "I[ ]+HAS[ ]+A"
-	itz = "ITZ"
-	r = "\bR\b"
-	sumof = "SUM[ ]+OF"
-	diffof = "DIFF[ ]+OF"
-	produktof = "PRODUKT[ ]+OF"
-	quoshuntof = "QUOSHUNT[ ]+OF"
-	modof = "MOD[ ]+OF"
-	biggrof = "BIGGR[ ]+OF"
-	smallrof = "SMALLR[ ]+OF"
-	bothof = "BOTH[ ]+OF"
-	eitherof = "EITHER[ ]+OF"
-	wonof = "WON[ ]+OF"
-	notKey = "NOT"
-	anyof = "ANY[ ]+OF"
-	allof = "ALL[ ]+OF"
-	bothsaem = "BOTH[ ]+SAEM"
-	diffrint = "DIFFRINT"
-	smoosh = "SMOOSH"
-	maek = "MAEK"
-	a = "\bA\b"
-	isnowa = "IS[ ]+NOW[ ]+A"
-	visible = "VISIBLE"
-	gimmeh = "GIMMEH"
-	orly = "O[ ]+RLY\\?"
-	yarly = "YA[ ]+RLY"
-	mebbe = "MEBBE"
-	nowai = "NO[ ]+WAI"
-	oic = "OIC"
-	wtf = "WTF\\?"
-	omg = "\bOMG\b"
-	omgwtf = "OMGWTF"
-	iminyr = "IM[ ]+IN[ ]+YR[ ]+"
-	uppin = "UPPIN"
-	nerfin = "NERFIN"
-	yr = "\bYR\b"
-	til = "TIL"
-	wile = "WILE"
-	imouttayr = "IM[ ]+OUTTA[ ]+YR"
-	foundyr = "FOUND[ ]+YR"
-	ifusayso = "IF[ ]+U[ ]+SAY[ ]+SO"
-	gtfo = "GTFO"
-	mkay = "MKAY"
-	an = "AN"
-	iiz = "I[ ]+IZ"
+	howizi = r"HOW[ ]+IZ[ ]+I"
+	hai = r"HAI"
+	kthxbye = r"KTHXBYE"
+	ihasa = r"I[ ]+HAS[ ]+A"
+	itz = r"ITZ"
+	r = r"\bR\b"
+	sumof = r"SUM[ ]+OF"
+	diffof = r"DIFF[ ]+OF"
+	produktof = r"PRODUKT[ ]+OF"
+	quoshuntof = r"QUOSHUNT[ ]+OF"
+	modof = r"MOD[ ]+OF"
+	biggrof = r"BIGGR[ ]+OF"
+	smallrof = r"SMALLR[ ]+OF"
+	bothof = r"BOTH[ ]+OF"
+	eitherof = r"EITHER[ ]+OF"
+	wonof = r"WON[ ]+OF"
+	notKey = r"NOT"
+	anyof = r"ANY[ ]+OF"
+	allof = r"ALL[ ]+OF"
+	bothsaem = r"BOTH[ ]+SAEM"
+	diffrint = r"DIFFRINT"
+	smoosh = r"SMOOSH"
+	maek = r"MAEK"
+	isnowa = r"IS[ ]+NOW[ ]+A"
+	visible = r"VISIBLE"
+	gimmeh = r"GIMMEH"
+	orly = r"O[ ]+RLY\?"
+	yarly = r"YA[ ]+RLY"
+	mebbe = r"MEBBE"
+	nowai = r"NO[ ]+WAI"
+	oic = r"OIC"
+	wtf = r"WTF\?"
+	omg = r"OMG"
+	omgwtf = r"OMGWTF"
+	iminyr = r"IM[ ]+IN[ ]+YR[ ]+"
+	uppin = r"UPPIN"
+	nerfin = r"NERFIN"
+	yr = r"YR"
+	til = r"TIL"
+	wile = r"WILE"
+	imouttayr = r"IM[ ]+OUTTA[ ]+YR"
+	foundyr = r"FOUND[ ]+YR"
+	ifusayso = r"IF[ ]+U[ ]+SAY[ ]+SO"
+	gtfo = r"GTFO"
+	mkay = r"MKAY"
+	an = r"AN"
+	a = r"\bA\b"
+	iiz = r"I[ ]+IZ"
 
 	# identifiers
-	identifier = "[a-zA-Z][a-zA-Z0-9_]*"
+	identifier = r"[a-zA-Z][a-zA-Z0-9_]*"
 
 
 	regEx = [numbr, numbar, yarn, strdelimiter, troof, typeLiteral, howizi, hai, kthxbye, ihasa, itz, r, sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof, bothof, eitherof, wonof, notKey, anyof, allof, bothsaem, diffrint, smoosh, maek, a, isnowa, visible, gimmeh, orly, yarly, mebbe, nowai, oic, wtf, omg, omgwtf, iminyr, uppin, nerfin, yr, til, wile, imouttayr, foundyr, ifusayso, gtfo, mkay, an, identifier]
 
+	# problem: both saem gets separated the second time. no clue why
 	allTokens = []
-	for r in regEx:
-		# search for the token in r
-		token = re.search("^([ ]*"+r+"[ ]*)", line)
-		if token:
-			# remove the match from the line
-			unspacedtoken = re.sub("^([ ]+)([ ]+)$", "", token.group())
-			line = re.sub(token.group(), "", line)
-			allTokens.append(unspacedtoken)
+	while True:
+		for r in regEx:
+			# search for the token in r
+			token = re.search(r"^([ ]*"+r+r"[ ]*)", line)
+			if token:
+				# remove the match from the line and remove the spaces
+				unspacedtoken = token.group().strip(r"^([ ]+)([ ]+)$")
+				line = line.replace(token.group(), "")
+
+				# append to allTokens
+				allTokens.append(unspacedtoken)
+
+				# end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
+				break
+
+		# check if line is wala na
+		if re.match(r"^(\s*\n*)$", line):
+			break
 
 	return allTokens
 
