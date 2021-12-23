@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog as fd
+import tkinter.scrolledtext as scrolledtext
 import re
 
 # notes and bugs
@@ -34,10 +35,10 @@ def select_file():
 
 def remove_comments(src_code):
 	# remove multiline comments
-	src_code = re.sub("(^|\n| )OBTW[^TLDR]*TLDR( |\n|$)", "", src_code)
-	
+	src_code = re.sub("(^|\n)([ ]+)?OBTW[^TLDR]*\n[^TLDR]*\n[^TLDR]*TLDR([ ]+)?(\n|$)", "\nOBTW\nTLDR\n", src_code,)
+
 	# remove single line comments
-	src_code = re.sub("(^|\n| )BTW.*", "", src_code)
+	src_code = re.sub("(^|\n| )BTW.*", "\nBTW", src_code)
 
 	return src_code
 
@@ -224,7 +225,7 @@ select_file_btn = Button(ul_frame, text="Select file..", command=select_file)
 select_file_btn.pack(fill=X)
 
 # text editor
-text_editor = Text(ul_frame, width=55, height=20)
+text_editor = scrolledtext.ScrolledText(ul_frame, width=55, height=20)
 text_editor.pack()
 
 ### UPPER MIDDLE FRAME (LEXEMES TABLE) ###
@@ -274,7 +275,7 @@ run_btn = Button(main_frame, text="EXECUTE", command=run)
 run_btn.pack(pady=5, fill=X)
 
 ### CONSOLE ###
-console = Text(main_frame)
+console = scrolledtext.ScrolledText(main_frame)
 console.pack(expand=True, fill=BOTH)
 
 ### start the app ###
