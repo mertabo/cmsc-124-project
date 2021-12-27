@@ -1,7 +1,6 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog as fd
-import tkinter.scrolledtext as scrolledtext
 import re
 
 # notes and bugs
@@ -14,182 +13,278 @@ code = ""
 ##### FUNCTIONS #####
 def read_file(filename):
 
-	file = open(filename, "r")
+        file = open(filename, "r")
 
-	contents = file.read() 
-	
-	file.close()
+        contents = file.read() 
+        
+        file.close()
 
-	return contents
+        return contents
 
 def show_file_contents(contents):
-	text_editor.delete(1.0, END) # make sure text editor is clear
-	text_editor.insert(1.0, contents) # print contents to GUI
+        text_editor.delete(1.0, END) # make sure text editor is clear
+        text_editor.insert(1.0, contents) # print contents to GUI
 
 def select_file():
-	file_path = fd.askopenfilename(title="Open a LOLCODE file..", filetypes=(("lol files", ".lol"),)) # open a file dialog that shows .lol files only
-	if len(file_path) == 0: return # no file selected
+        file_path = fd.askopenfilename(title="Open a LOLCODE file..", filetypes=(("lol files", ".lol"),)) # open a file dialog that shows .lol files only
+        if len(file_path) == 0: return # no file selected
 
-	file_contents = read_file(file_path) # get the file contents
-	show_file_contents(file_contents) # show file contents to GUI
+        file_contents = read_file(file_path) # get the file contents
+        show_file_contents(file_contents) # show file contents to GUI
 
 def remove_comments(src_code):
-	# remove multiline comments
-	src_code = re.sub("(^|\n)([ ]+)?OBTW[^TLDR]*\n[^TLDR]*\n[^TLDR]*TLDR([ ]+)?(\n|$)", "\nOBTW\nTLDR\n", src_code,)
+        # remove multiline comments
+        src_code = re.sub("(^|\n| )OBTW[^TLDR]*TLDR( |\n|$)", "", src_code)
+        
+        # remove single line comments
+        src_code = re.sub("(^|\n| )BTW.*", "", src_code)
 
-	# remove single line comments
-	src_code = re.sub("(^|\n| )BTW.*", "\nBTW", src_code)
-
-	return src_code
+        return src_code
 
 def remove_whitespaces(src_code):
-	temp = []
+        temp = []
 
-	for line in src_code:
-		line = line.strip() # remove leading and trailing whitespaces
-		if line != "":
-			temp.append(line) # append line only if it is an empty string
+        for line in src_code:
+                line = line.strip() # remove leading and trailing whitespaces
+                if line != "":
+                        temp.append(line) # append line only if it is an empty string
 
-	return temp
+        return temp
 
 def findMatch(line):
-	# lagay yung mga regex here
 
-	# literals
-	numbr = r"-?[0-9]+"
-	numbar = r"-?[0-9]+[\.][0-9]*"
-	yarn = r"(?<=['\"]).*(?=['\"])"
-	strdelimiter = r"['\"]"
-	troof = r"(WIN|FAIL)"
-	typeLiteral = r"(NUMBR|NUMBAR|YARN|TROOF|NOOB)"
+        #Literal
+        numbr = r"-?[0-9]+"
+        numbar = r"-?[0-9]+[\.][0-9]*"
+        yarn = r"(?<=['\"]).*(?=['\"])"
+        troof = r"(WIN|FAIL)"
+        typeLiteral = r"(NUMBR|NUMBAR|YARN|TROOF|NOOB)"
 
-	# keywords
-	howizi = r"HOW[ ]+IZ[ ]+I"
-	hai = r"HAI"
-	kthxbye = r"KTHXBYE"
-	ihasa = r"I[ ]+HAS[ ]+A"
-	itz = r"ITZ"
-	r = r"\bR\b"
-	sumof = r"SUM[ ]+OF"
-	diffof = r"DIFF[ ]+OF"
-	produktof = r"PRODUKT[ ]+OF"
-	quoshuntof = r"QUOSHUNT[ ]+OF"
-	modof = r"MOD[ ]+OF"
-	biggrof = r"BIGGR[ ]+OF"
-	smallrof = r"SMALLR[ ]+OF"
-	bothof = r"BOTH[ ]+OF"
-	eitherof = r"EITHER[ ]+OF"
-	wonof = r"WON[ ]+OF"
-	notKey = r"NOT"
-	anyof = r"ANY[ ]+OF"
-	allof = r"ALL[ ]+OF"
-	bothsaem = r"BOTH[ ]+SAEM"
-	diffrint = r"DIFFRINT"
-	smoosh = r"SMOOSH"
-	maek = r"MAEK"
-	isnowa = r"IS[ ]+NOW[ ]+A"
-	visible = r"VISIBLE"
-	gimmeh = r"GIMMEH"
-	orly = r"O[ ]+RLY\?"
-	yarly = r"YA[ ]+RLY"
-	mebbe = r"MEBBE"
-	nowai = r"NO[ ]+WAI"
-	oic = r"OIC"
-	wtf = r"WTF\?"
-	omg = r"OMG"
-	omgwtf = r"OMGWTF"
-	iminyr = r"IM[ ]+IN[ ]+YR[ ]+"
-	uppin = r"UPPIN"
-	nerfin = r"NERFIN"
-	yr = r"YR"
-	til = r"TIL"
-	wile = r"WILE"
-	imouttayr = r"IM[ ]+OUTTA[ ]+YR"
-	foundyr = r"FOUND[ ]+YR"
-	ifusayso = r"IF[ ]+U[ ]+SAY[ ]+SO"
-	gtfo = r"GTFO"
-	mkay = r"MKAY"
-	an = r"AN"
-	a = r"\bA\b"
-	iiz = r"I[ ]+IZ"
+        #String Delimiter
+        strdelimiter = r"['\"]"
+        
+        #Code Delimiter
+        hai = r"HAI"
+        kthxbye = r"KTHXBYE"
 
-	# identifiers
-	identifier = r"[a-zA-Z][a-zA-Z0-9_]*"
+        #Variable Declaration
+        ihasa = r"I[ ]+HAS[ ]+A"
+
+        #Variable Assignment
+        itz = r"ITZ"
+
+        #Output Keyword
+        visible = r"VISIBLE"
+
+        #Input Keyword
+        gimmeh = r"GIMMEH"
+
+        #Assignment Keywords
+        r = r"\bR\b"
+        
+        #Flow Control Keywords
+        #If-Else Keywords
+        yarly = r"YA[ ]+RLY"
+        nowai = r"NO[ ]+WAI"
+        orly = r"O[ ]+RLY\?"
+        
+        #Switch-Case Keywords
+        omg = r"OMG"
+        omgwtf = r"OMGWTF"
+        oic = r"OIC"
+        wtf = r"WTF\?"
+
+        #Loop Keywords
+        uppin = r"UPPIN"
+        nerfin = r"NERFIN"
+        til = r"TIL"
+        wile = r"WILE"
+        imouttayr = r"IM[ ]+OUTTA[ ]+YR"
+        yr = r"YR"
+        iminyr = r"IM[ ]+IN[ ]+YR[ ]+"
+        mebbe = r"MEBBE"
+
+        #Concatenation Keywords
+        smoosh = r"SMOOSH"
+        mkay = r"MKAY"
+        
+        #Connector Keywords
+        an = r"AN"
+        a = r"\bA\b"
+
+        #Comparison Keywords
+        bothsaem = r"BOTH[ ]+SAEM"
+        diffrint = r"DIFFRINT"
+        
+        #Boolean Keywords
+        bothof = r"BOTH[ ]+OF"
+        eitherof = r"EITHER[ ]+OF"
+        wonof = r"WON[ ]+OF"
+        notKey = r"NOT"
+        anyof = r"ANY[ ]+OF"
+        allof = r"ALL[ ]+OF"
+        
+        #Arithmetic Keywords 40
+        sumof = r"SUM[ ]+OF"
+        diffof = r"DIFF[ ]+OF"
+        produktof = r"PRODUKT[ ]+OF"
+        quoshuntof = r"QUOSHUNT[ ]+OF"
+        modof = r"MOD[ ]+OF"
+        biggrof = r"BIGGR[ ]+OF"
+        smallrof = r"SMALLR[ ]+OF"
+
+        #Comment Delimiter 47
+        btw = r"BTW"
+        obtw = r"OBTW"
+        tldr = r"TLDR"
+
+        #Casting Keywords
+        maek = r"MAEK"
+        isnowa = r"IS[ ]+NOW[ ]+A"
+
+        #Return Keywords
+        foundyr = r"FOUND[ ]+YR"
+        gtfo = r"GTFO"
+
+        #Calling Keyword
+        iiz = r"I[ ]+IZ"
+
+        #Function Delimiter
+        howizi = r"HOW[ ]+IZ[ ]+I"
+        ifusayso = r"IF[ ]+U[ ]+SAY[ ]+SO"
+    
+        #Variable Identifier
+        identifier = r"[a-zA-Z][a-zA-Z0-9_]*"
 
 
-	regEx = [numbr, numbar, yarn, strdelimiter, troof, typeLiteral, howizi, hai, kthxbye, ihasa, itz, r, sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof, bothof, eitherof, wonof, notKey, anyof, allof, bothsaem, diffrint, smoosh, maek, a, isnowa, visible, gimmeh, orly, yarly, mebbe, nowai, oic, wtf, omg, omgwtf, iminyr, uppin, nerfin, yr, til, wile, imouttayr, foundyr, ifusayso, gtfo, mkay, an, identifier]
+        regEx = [numbr, numbar,yarn, troof, typeLiteral,
+                strdelimiter, hai, kthxbye, ihasa, itz, visible, gimmeh,
+                r, yarly, nowai, orly, omg, omgwtf, oic, wtf, uppin,
+                nerfin, til, wile, imouttayr, yr, iminyr, mebbe,
+                smoosh, mkay, an, a, bothof, eitherof, wonof, notKey, anyof, allof,
+                sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof,
+                btw, obtw, tldr, maek, isnowa, foundyr, gtfo, iiz, howizi, ifusayso,
+                identifier]
 
-	# problem: both saem gets separated the second time. no clue why
-	# note: PANO PAG WALANG MATCH AT ALL
-	allTokens = []
-	while True:
-		for r in regEx:
-			# search for the token in r
-			token = re.search(r"^([ ]*"+r+r"[ ]*)", line)
-			if token:
-				# remove the match from the line and remove the spaces
-				unspacedtoken = token.group().strip(r"^([ ]+)([ ]+)$")
-				line = line.replace(token.group(), "")
+        # problem: both saem gets separated the second time. no clue why
+        # note: PANO PAG WALANG MATCH AT ALL
+        allTokens = []
+        classify = []
+        while True:
+                for index, r in enumerate(regEx):
+                        # search for the token in r
+                        token = re.search(r"^([ ]*"+r+r"[ ]*)", line)
+                        print(token)
+                        if token:
+                                # remove the match from the line and remove the spaces
+                                unspacedtoken = token.group().strip(r"^([ ]+)([ ]+)$")
+                                line = line.replace(token.group(), "")
 
-				# append to allTokens
-				allTokens.append(unspacedtoken)
+                                # append to allTokens
+                                allTokens.append(unspacedtoken)
+                                #classify token
+                                if index >= 0 and index <= 4:
+                                        classify.append("Literal")
+                                elif index == 5:
+                                        classify.append("String Delimiter")
+                                elif index ==6 or index ==7:
+                                        classify.append("Code Delimiter")
+                                elif index == 8:
+                                        classify.append("Variable Declaration")
+                                elif index == 9:
+                                        classify.append("Variable Assignment")
+                                elif index == 10:
+                                        classify.append("Output Keyword")
+                                elif index == 11:
+                                        classify.append("Input Keyword")
+                                elif index == 12:
+                                        classify.append("Assignment Keyword")
+                                elif index >= 13 and index <= 27:
+                                        classify.append("Flow Control Keyword")
+                                elif index == 28 or index == 29:
+                                        classify.append("Concatenation Keyword")
+                                elif index == 30 or index == 31:
+                                        classify.append("Connector Keyword")
+                                elif index == 32 or index == 33:
+                                        classify.append("Comparison Keyword")
+                                elif index >= 34 and index <= 39:
+                                        classify.append("Boolean Keyword")
+                                elif index >= 40 and index <= 46:
+                                        classify.append("Arithmetic Keyword")
+                                elif index >= 47 and index <= 49:
+                                        classify.append("Comment Delimiter")
+                                elif index == 50 or index == 51:
+                                        classify.append("Casting Keyword")
+                                elif index == 52 or index == 53:
+                                        classify.append("Return Keyword")
+                                elif index == 54:
+                                        classify.append("Calling Keyword")
+                                elif index == 55 or index == 56:
+                                        classify.append("Function Delimiter")
+                                elif index == 57:
+                                        classify.append("Variable Identifier")
+                                
+                                # end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
+                                break
+                        else:
+                                # lagay mo yung first token here
+                                try:
+                                        unmatched = line.split()[0]
+                                except:
+                                        unmatched = line
+                                line = line.replace(unmatched, "")
 
-				# end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
-				break
-			else:
-				# lagay mo yung first token here
-				unmatched = line.split()[0]
-				line = line.replace(unmatched, "")
+                                # append to allTokens
+                                allTokens.append(unmatched)
+                                classify.append("Unknown Keyword")
+                                break
 
-				# append to allTokens
-				allTokens.append(unmatched)
-
-				break
-
-		# check if line is wala na
-		if re.match(r"^(\s*\n*)$", line):
-			break
-
-	return allTokens
+                # check if line is wala na
+                if re.match(r"^(\s*\n*)$", line):
+                        break
+        #print(allTokens)
+        #print(classify)
+        return allTokens, classify
 
 def tokenize(code):
-	# NOTE
-		# throw error if may OBTW or TLDR na nasa same line as other statements?
-		# implement this sa checking syntax siguro, for now tokenizing
-			# we check if there's an OBTW and TLDR in there maybe? tas throw error if meron
-			# this does not match lines na may OBTW na kasama with other lines
+        # NOTE
+                # throw error if may OBTW or TLDR na nasa same line as other statements?
+                # implement this sa checking syntax siguro, for now tokenizing
+                        # we check if there's an OBTW and TLDR in there maybe? tas throw error if meron
+                        # this does not match lines na may OBTW na kasama with other lines
 
-	# tokenize
-	# assuming na di required ang newline sa YARN
-	print(code)
-	tokens = []
-	# iterate through every line
-	for line in code:
-		# separate everything, ignore all spaces
-		# check keywords by:
-		# creating regex just as a string
-		# putthing them in a list
-		# iterate through the list
-		# if there is a match, we append the match to the list of tokens
+        # tokenize
+        # assuming na di required ang newline sa YARN
+        lexTable = {}
+        tokens = []
+        classifications = []
+        # iterate through every line
+        for line in code:
+                # separate everything, ignore all spaces
+                # check keywords by:
+                # creating regex just as a string
+                # putthing them in a list
+                # iterate through the list
+                # if there is a match, we append the match to the list of tokens
 
-		# we look for matches and put them in the list token
-		token = findMatch(line)
+                # we look for matches and put them in the list token
+                token, classify = findMatch(line)
+        		tokens.append(token)
+        		classifications.append(classify)
 
-		# iterate through every token for this line and append them to the final tokens list
-		for t in token:
-			# add to dictionary? IDK
-			tokens.append(t)
+        lexTable["Lexemes"] = tokens
+        lexTable["Classification"] = classifications
+                # iterate through every token for this line and append them to the final tokens list
 
-	print(tokens)
 
 def run():
-	global code
+        global code
 
-	code = text_editor.get(1.0,'end-1c') # get the input from Text widget
-	code = remove_comments(code)
-	code = code.split("\n")
-	code = remove_whitespaces(code)
-	tokenize(code)
+        code = text_editor.get(1.0,'end-1c') # get the input from Text widget
+        code = remove_comments(code)
+        code = code.split("\n")
+        code = remove_whitespaces(code)
+        tokenize(code)
 
 
 ##### GUI #####
@@ -225,7 +320,7 @@ select_file_btn = Button(ul_frame, text="Select file..", command=select_file)
 select_file_btn.pack(fill=X)
 
 # text editor
-text_editor = scrolledtext.ScrolledText(ul_frame, width=55, height=20)
+text_editor = Text(ul_frame, width=55, height=20)
 text_editor.pack()
 
 ### UPPER MIDDLE FRAME (LEXEMES TABLE) ###
@@ -275,9 +370,8 @@ run_btn = Button(main_frame, text="EXECUTE", command=run)
 run_btn.pack(pady=5, fill=X)
 
 ### CONSOLE ###
-console = scrolledtext.ScrolledText(main_frame)
+console = Text(main_frame)
 console.pack(expand=True, fill=BOTH)
 
 ### start the app ###
 root.mainloop()
-
