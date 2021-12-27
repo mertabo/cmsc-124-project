@@ -53,36 +53,35 @@ def remove_whitespaces(src_code):
 
 def findMatch(line):
 
-        #Literal
+        #Literal(0-4)
         numbr = r"-?[0-9]+"
         numbar = r"-?[0-9]+[\.][0-9]*"
         yarn = r"(?<=['\"]).*(?=['\"])"
         troof = r"(WIN|FAIL)"
         typeLiteral = r"(NUMBR|NUMBAR|YARN|TROOF|NOOB)"
 
-        #String Delimiter
+        #String Delimiter(5)
         strdelimiter = r"['\"]"
-        
-        #Code Delimiter
+        #Code Delimiter(6-7)
         hai = r"HAI"
         kthxbye = r"KTHXBYE"
 
-        #Variable Declaration
+        #Variable Declaration(8)
         ihasa = r"I[ ]+HAS[ ]+A"
 
-        #Variable Assignment
+        #Variable Assignment(9)
         itz = r"ITZ"
 
-        #Output Keyword
+        #Output Keyword(10)
         visible = r"VISIBLE"
 
-        #Input Keyword
+        #Input Keyword(11)
         gimmeh = r"GIMMEH"
 
-        #Assignment Keywords
+        #Assignment Keywords(12)
         r = r"\bR\b"
         
-        #Flow Control Keywords
+        #Flow Control Keywords(13-27)
         #If-Else Keywords
         yarly = r"YA[ ]+RLY"
         nowai = r"NO[ ]+WAI"
@@ -104,19 +103,19 @@ def findMatch(line):
         iminyr = r"IM[ ]+IN[ ]+YR[ ]+"
         mebbe = r"MEBBE"
 
-        #Concatenation Keywords
+        #Concatenation Keywords(28-29)
         smoosh = r"SMOOSH"
         mkay = r"MKAY"
         
-        #Connector Keywords
+        #Connector Keywords(30-31)
         an = r"AN"
         a = r"\bA\b"
 
-        #Comparison Keywords
+        #Comparison Keywords(32-33)
         bothsaem = r"BOTH[ ]+SAEM"
         diffrint = r"DIFFRINT"
         
-        #Boolean Keywords
+        #Boolean Keywords(34-39)
         bothof = r"BOTH[ ]+OF"
         eitherof = r"EITHER[ ]+OF"
         wonof = r"WON[ ]+OF"
@@ -124,7 +123,7 @@ def findMatch(line):
         anyof = r"ANY[ ]+OF"
         allof = r"ALL[ ]+OF"
         
-        #Arithmetic Keywords 40
+        #Arithmetic Keywords(40-46)
         sumof = r"SUM[ ]+OF"
         diffof = r"DIFF[ ]+OF"
         produktof = r"PRODUKT[ ]+OF"
@@ -133,27 +132,27 @@ def findMatch(line):
         biggrof = r"BIGGR[ ]+OF"
         smallrof = r"SMALLR[ ]+OF"
 
-        #Comment Delimiter 47
+        #Comment Delimiter(47-49)
         btw = r"BTW"
         obtw = r"OBTW"
         tldr = r"TLDR"
 
-        #Casting Keywords
+        #Casting Keywords(50-51)
         maek = r"MAEK"
         isnowa = r"IS[ ]+NOW[ ]+A"
 
-        #Return Keywords
+        #Return Keywords(52-53)
         foundyr = r"FOUND[ ]+YR"
         gtfo = r"GTFO"
 
-        #Calling Keyword
+        #Calling Keyword(54)
         iiz = r"I[ ]+IZ"
 
-        #Function Delimiter
+        #Function Delimiter(55-56)
         howizi = r"HOW[ ]+IZ[ ]+I"
         ifusayso = r"IF[ ]+U[ ]+SAY[ ]+SO"
     
-        #Variable Identifier
+        #Variable Identifier(57)
         identifier = r"[a-zA-Z][a-zA-Z0-9_]*"
 
 
@@ -161,7 +160,7 @@ def findMatch(line):
                 strdelimiter, hai, kthxbye, ihasa, itz, visible, gimmeh,
                 r, yarly, nowai, orly, omg, omgwtf, oic, wtf, uppin,
                 nerfin, til, wile, imouttayr, yr, iminyr, mebbe,
-                smoosh, mkay, an, a, bothof, eitherof, wonof, notKey, anyof, allof,
+                smoosh, mkay, an, a, bothsaem, diffrint, bothof, eitherof, wonof, notKey, anyof, allof,
                 sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof,
                 btw, obtw, tldr, maek, isnowa, foundyr, gtfo, iiz, howizi, ifusayso,
                 identifier]
@@ -170,12 +169,14 @@ def findMatch(line):
         # note: PANO PAG WALANG MATCH AT ALL
         allTokens = []
         classify = []
+        hasMatch = False
         while True:
                 for index, r in enumerate(regEx):
                         # search for the token in r
+                        hasMatch = False
                         token = re.search(r"^([ ]*"+r+r"[ ]*)", line)
-                        print(token)
                         if token:
+                                hasMatch = True
                                 # remove the match from the line and remove the spaces
                                 unspacedtoken = token.group().strip(r"^([ ]+)([ ]+)$")
                                 line = line.replace(token.group(), "")
@@ -226,24 +227,20 @@ def findMatch(line):
                                 
                                 # end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
                                 break
-                        else:
-                                # lagay mo yung first token here
-                                try:
-                                        unmatched = line.split()[0]
-                                except:
-                                        unmatched = line
-                                line = line.replace(unmatched, "")
+                if hasMatch == False:
+                        
+                        unmatched = line.split()[0]
+                        line = line.replace(unmatched, "")
 
-                                # append to allTokens
-                                allTokens.append(unmatched)
-                                classify.append("Unknown Keyword")
-                                break
+                        # append to allTokens
+                        allTokens.append(unmatched)
+                        classify.append("Unknown Keyword")
+                        break
 
                 # check if line is wala na
                 if re.match(r"^(\s*\n*)$", line):
                         break
-        #print(allTokens)
-        #print(classify)
+
         return allTokens, classify
 
 def tokenize(code):
@@ -269,13 +266,13 @@ def tokenize(code):
 
                 # we look for matches and put them in the list token
                 token, classify = findMatch(line)
-        		tokens.append(token)
-        		classifications.append(classify)
+                tokens.append(token)
+                classifications.append(classify)
 
         lexTable["Lexemes"] = tokens
         lexTable["Classification"] = classifications
                 # iterate through every token for this line and append them to the final tokens list
-
+        print(lexTable)
 
 def run():
         global code
