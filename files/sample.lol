@@ -1,3 +1,6 @@
+
+
+
 OBTW
 comment
 TLDR
@@ -16,12 +19,13 @@ HOW IZ I POWERTWO YR NUM BTW he
    I HAS A INDEX ITZ 0
    OBTW
    comment
-   TLDR   I HAS A TOTAL ITZ 1
+   TLDR  I HAS A TOTAL ITZ 1
    IM IN YR LOOP UPPIN YR INDEX TIL BOTH SAEM INDEX AN NUM
       TOTAL R PRODUKT OF TOTAL AN 2
-   IM OUTTA YR LOOP OBTW
-   comment TLDR
-
+   IM OUTTA YR LOOP 
+   OBTW
+   comment 
+   TLDR
    OBTW this is a comment
    pls ignore this
    TLDR
@@ -29,8 +33,33 @@ HOW IZ I POWERTWO YR NUM BTW he
    FOUND YR TOTAL
    IF U SAY SO
    BTW OUTPUT: 8
+   BTW yeah
    VISIBLE I IZ POWERTWO YR 4 MKAY
 KTHXBYE
 OBTW
 comment
 TLDR
+hi 
+OBTWhi
+
+
+TLDR
+OBTW hi
+
+TLDR
+OBTW hi
+TLDR
+OBTW
+
+
+
+
+   TLDR
+OBTW TLDR
+OBTWhi
+TLDR OBTW hi 
+TLDR
+OBTW
+TLDR hi
+
+
