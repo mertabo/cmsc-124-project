@@ -259,29 +259,14 @@ def display(table, tree):
 
 	lhs, rhs = list(table.keys())
 	length_line = len(table[lhs])
-	# print(lhs)
-	# print(rhs)
-	# print(length)
 	index = 0
+
+	# print to GUI
 	for i in range(length_line):
-		# for b in a:
-			# print(b)
-		# print(table[lhs][i])
 		length_token = len(table[lhs][i])
-		# table.items()[i]
 		for j in range(length_token):
 			tree.insert(parent='', index=END, text=index, values=(table[lhs][i][j], table[rhs][i][j]))
 			index += 1
-	# for value in table.values():
-		# print(len(value))
-
-		# print(key)
-		# print(value)
-		# print(j)
-		# for k in j:
-		# 	for l in k:
-		# 		print(l)
-	# print(table)
 
 def tokenize(code):
 	# NOTE
