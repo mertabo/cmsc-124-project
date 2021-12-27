@@ -143,17 +143,18 @@ def findMatch(line):
 		if hasMatch==False:
 			# if the front of the line has no match, remove.
 			# lagay mo yung first token here
+			# note: given in the line "I H/AS A", the program matches I, H, and A as keywords or identifiers, and /AS as unmatched. ideally it should read H/AS as unmatched. fix it if it becomes a problem.
 			unmatched = line.split()[0]
 			line = line.replace(unmatched, "")
 
 			# append to allTokens
-			noMatch.append(unmatched)
+			allTokens.append(unmatched)
 
 		# check if line is wala na
 		if re.match(r"^(\s*\n*)$", line):
 			break
 
-	return allTokens, noMatch
+	return allTokens
 
 def tokenize(code):
 	# NOTE
@@ -166,7 +167,6 @@ def tokenize(code):
 	# assuming na di required ang newline sa YARN
 	print(code)
 	tokens = []
-	noMatches = []
 	# iterate through every line
 	for line in code:
 		# separate everything, ignore all spaces
@@ -177,7 +177,7 @@ def tokenize(code):
 		# if there is a match, we append the match to the list of tokens
 
 		# we look for matches and put them in the list token
-		token, noMatches = findMatch(line)
+		token = findMatch(line)
 
 		# iterate through every token for this line and append them to the final tokens list
 		for t in token:
