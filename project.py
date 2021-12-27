@@ -116,16 +116,20 @@ def findMatch(line):
 	identifier = r"[a-zA-Z][a-zA-Z0-9_]*"
 
 
-	regEx = [numbr, numbar, yarn, strdelimiter, troof, typeLiteral, howizi, hai, kthxbye, ihasa, sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof, bothof, eitherof, wonof, notKey, anyof, allof, bothsaem, diffrint, smoosh, maek, isnowa, visible, gimmeh, orly, yarly, mebbe, nowai, oic, wtf, omg, omgwtf, iminyr, uppin, nerfin, yr, til, wile, imouttayr, foundyr, ifusayso, gtfo, mkay, identifier, an, a, itz, r]
+	regEx = [numbr, numbar, strdelimiter, troof, typeLiteral, howizi, hai, kthxbye, ihasa, sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof, bothof, eitherof, wonof, notKey, anyof, allof, bothsaem, diffrint, smoosh, maek, isnowa, visible, gimmeh, orly, yarly, mebbe, nowai, oic, wtf, omg, omgwtf, iminyr, uppin, nerfin, yr, til, wile, imouttayr, foundyr, ifusayso, gtfo, mkay, identifier, an, a, itz, r, yarn]
 
 	# problem: both saem gets separated the second time. no clue why
 	# note: PANO PAG WALANG MATCH AT ALL
 	allTokens = []
-	while True:
+	noMatch = []
+	while True: # we search for tokens at the front of the line over and over, iterating thru the tokens every time until empty na yung line.
+		hasMatch = False
 		for r in regEx:
-			# search for the token in r
+			# search for the current r in the line. searches the FRONT of the line.
 			token = re.search(r"^([ ]*"+r+r"[ ]*)", line)
 			if token:
+				hasMatch = True # gawing true, tas if irerepeat yung pagsearch, gagawin ulet false
+
 				# remove the match from the line and remove the spaces
 				unspacedtoken = token.group().strip(r"^([ ]+)([ ]+)$")
 				line = line.replace(token.group(), "")
@@ -135,21 +139,21 @@ def findMatch(line):
 
 				# end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
 				break
-			else:
-				# lagay mo yung first token here
-				unmatched = line.split()[0]
-				line = line.replace(unmatched, "")
 
-				# append to allTokens
-				allTokens.append(unmatched)
+		if hasMatch==False:
+			# if the front of the line has no match, remove.
+			# lagay mo yung first token here
+			unmatched = line.split()[0]
+			line = line.replace(unmatched, "")
 
-				break
+			# append to allTokens
+			noMatch.append(unmatched)
 
 		# check if line is wala na
 		if re.match(r"^(\s*\n*)$", line):
 			break
 
-	return allTokens
+	return allTokens, noMatch
 
 def tokenize(code):
 	# NOTE
@@ -162,6 +166,7 @@ def tokenize(code):
 	# assuming na di required ang newline sa YARN
 	print(code)
 	tokens = []
+	noMatches = []
 	# iterate through every line
 	for line in code:
 		# separate everything, ignore all spaces
@@ -172,7 +177,7 @@ def tokenize(code):
 		# if there is a match, we append the match to the list of tokens
 
 		# we look for matches and put them in the list token
-		token = findMatch(line)
+		token, noMatches = findMatch(line)
 
 		# iterate through every token for this line and append them to the final tokens list
 		for t in token:
