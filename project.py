@@ -35,11 +35,7 @@ def select_file():
 
 def remove_comments(src_code):
 	# remove multiline comments
-	multiline_regex = r"(^|\n)( |\t)*OBTW(\s+[^TLDR]+)?\n([^TLDR]+\n+)*(\s)*TLDR( |\t)*(\n|$)"
-	sub_regex = r"\nOBTW\nTLDR\n\n"
-
-	src_code = re.sub(multiline_regex, sub_regex, src_code) 
-	src_code = re.sub(multiline_regex, sub_regex, src_code) # makes sure everything is matched (even those that follow another multiline)
+	src_code = re.sub(r"(^|\n)( |\t)*OBTW(\s+[^TLDR]+)?\n([^TLDR]+\n+)*(\s)*TLDR( |\t)*(?=(\n|$))", r"\nOBTW\nTLDR\n", src_code) 
 	
 	# remove single line comments
 	src_code = re.sub(r"(^|\s)BTW.*", "\nBTW", src_code)
@@ -52,9 +48,44 @@ def remove_whitespaces(src_code):
 	for line in src_code:
 		line = line.strip() # remove leading and trailing whitespaces
 		if line != "":
-			temp.append(line) # append line only if it is an empty string
+			temp.append(line) # append line only if it is not an empty string
 
 	return temp
+
+def fill_table(table, tree):
+	# make sure table is clear
+	for element in tree.get_children():
+		tree.delete(element)
+
+	lhs, rhs = list(table.keys())
+	count = 0
+
+	for i in range(len(table[lhs])): # per line
+		for j in range(len(table[lhs][i])): # per token
+			tree.insert(parent='', index=END, text=count, values=(table[lhs][i][j], table[rhs][i][j])) # print to GUI
+			count += 1
+
+def is_duplicate(token, token_list):
+	for line in token_list:
+		for tok in line:
+			if tok == token: 
+				return True # duplicate found
+
+	return False # no duplicate
+
+def remove_duplicate(token, classify, token_list):
+	new_token = []
+	new_classify = []
+
+	for i in range(len(token)):
+		tok = token[i]
+		if classify[i] == "Variable Identifier" and is_duplicate(tok, token_list):
+			continue # skip duplicate identifiers
+		else:
+			new_token.append(tok)
+			new_classify.append(classify[i])
+
+	return new_token, new_classify
 
 def findMatch(line):
 	# lagay yung mga regex here
@@ -73,7 +104,7 @@ def findMatch(line):
 	kthxbye = r"KTHXBYE"
 
 	#Variable Declaration(8)
-	ihasa = r"I[ ]+HAS[ ]+A"
+	ihasa = r"I[ |\t]+HAS[ |\t]+A"
 
 	#Variable Assignment(9)
 	itz = r"ITZ"
@@ -89,9 +120,9 @@ def findMatch(line):
 	
 	#Flow Control Keywords(13-27)
 	#If-Else Keywords
-	yarly = r"YA[ ]+RLY"
-	nowai = r"NO[ ]+WAI"
-	orly = r"O[ ]+RLY\?"
+	yarly = r"YA[ |\t]+RLY"
+	nowai = r"NO[ |\t]+WAI"
+	orly = r"O[ |\t]+RLY\?"
 	
 	#Switch-Case Keywords
 	omg = r"OMG"
@@ -104,9 +135,9 @@ def findMatch(line):
 	nerfin = r"NERFIN"
 	til = r"TIL"
 	wile = r"WILE"
-	imouttayr = r"IM[ ]+OUTTA[ ]+YR"
+	imouttayr = r"IM[ |\t]+OUTTA[ |\t]+YR"
 	yr = r"YR"
-	iminyr = r"IM[ ]+IN[ ]+YR[ ]+"
+	iminyr = r"IM[ |\t]+IN[ |\t]+YR"
 	mebbe = r"MEBBE"
 
 	#Concatenation Keywords(28-29)
@@ -118,25 +149,25 @@ def findMatch(line):
 	a = r"\bA\b"
 
 	#Comparison Keywords(32-33)
-	bothsaem = r"BOTH[ ]+SAEM"
+	bothsaem = r"BOTH[ |\t]+SAEM"
 	diffrint = r"DIFFRINT"
 	
 	#Boolean Keywords(34-39)
-	bothof = r"BOTH[ ]+OF"
-	eitherof = r"EITHER[ ]+OF"
-	wonof = r"WON[ ]+OF"
+	bothof = r"BOTH[ |\t]+OF"
+	eitherof = r"EITHER[ |\t]+OF"
+	wonof = r"WON[ |\t]+OF"
 	notKey = r"NOT"
-	anyof = r"ANY[ ]+OF"
-	allof = r"ALL[ ]+OF"
+	anyof = r"ANY[ |\t]+OF"
+	allof = r"ALL[ |\t]+OF"
 	
 	#Arithmetic Keywords(40-46)
-	sumof = r"SUM[ ]+OF"
-	diffof = r"DIFF[ ]+OF"
-	produktof = r"PRODUKT[ ]+OF"
-	quoshuntof = r"QUOSHUNT[ ]+OF"
-	modof = r"MOD[ ]+OF"
-	biggrof = r"BIGGR[ ]+OF"
-	smallrof = r"SMALLR[ ]+OF"
+	sumof = r"SUM[ |\t]+OF"
+	diffof = r"DIFF[ |\t]+OF"
+	produktof = r"PRODUKT[ |\t]+OF"
+	quoshuntof = r"QUOSHUNT[ |\t]+OF"
+	modof = r"MOD[ |\t]+OF"
+	biggrof = r"BIGGR[ |\t]+OF"
+	smallrof = r"SMALLR[ |\t]+OF"
 
 	#Comment Delimiter(47-49)
 	btw = r"BTW"
@@ -145,18 +176,18 @@ def findMatch(line):
 
 	#Casting Keywords(50-51)
 	maek = r"MAEK"
-	isnowa = r"IS[ ]+NOW[ ]+A"
+	isnowa = r"IS[ |\t]+NOW[ |\t]+A"
 
 	#Return Keywords(52-53)
-	foundyr = r"FOUND[ ]+YR"
+	foundyr = r"FOUND[ |\t]+YR"
 	gtfo = r"GTFO"
 
 	#Calling Keyword(54)
-	iiz = r"I[ ]+IZ"
+	iiz = r"I[ |\t]+IZ"
 
 	#Function Delimiter(55-56)
-	howizi = r"HOW[ ]+IZ[ ]+I"
-	ifusayso = r"IF[ ]+U[ ]+SAY[ ]+SO"
+	howizi = r"HOW[ |\t]+IZ[ |\t]+I"
+	ifusayso = r"IF[ |\t]+U[ |\t]+SAY[ |\t]+SO"
 
 	#Variable Identifier(57)
 	identifier = r"[a-zA-Z][a-zA-Z0-9_]*"
@@ -179,23 +210,21 @@ def findMatch(line):
 		hasMatch = False
 		for index, r in enumerate(regEx):
 			# search for the current r in the line. searches the FRONT of the line.
-			token = re.search(r"^([ ]*"+r+r"[ ]*)", line)
+			token_regex = r"^"+r+r"(\s|$)"
+			token = re.search(token_regex, line)
 			if token:
 				hasMatch = True # gawing true, tas if irerepeat yung pagsearch, gagawin ulet false
 
 				# remove the match from the line and remove the spaces
-				unspacedtoken = token.group().strip(r"^([ ]+)([ ]+)$")
-				line = line.replace(token.group(), "")
-
-				# append to allTokens
-				allTokens.append(unspacedtoken)
+				unspacedtoken = token.group().strip()
+				line = re.sub(token_regex, "", line).strip()
 
 				#classify token
-				if index >= 0 and index <= 4:
+				if index in range(0,5):
 					classify.append("Literal")
 				elif index == 5:
 					classify.append("String Delimiter")
-				elif index ==6 or index ==7:
+				elif index in range(6,8):
 					classify.append("Code Delimiter")
 				elif index == 8:
 					classify.append("Variable Declaration")
@@ -207,30 +236,35 @@ def findMatch(line):
 					classify.append("Input Keyword")
 				elif index == 12:
 					classify.append("Assignment Keyword")
-				elif index >= 13 and index <= 27:
+				elif index in range(13,28):
 					classify.append("Flow Control Keyword")
-				elif index == 28 or index == 29:
+				elif index in range(28,30):
 					classify.append("Concatenation Keyword")
-				elif index == 30 or index == 31:
+				elif index in range(30,32):
 					classify.append("Connector Keyword")
-				elif index == 32 or index == 33:
+				elif index in range(32,34):
 					classify.append("Comparison Keyword")
-				elif index >= 34 and index <= 39:
+				elif index in range(34,40):
 					classify.append("Boolean Keyword")
-				elif index >= 40 and index <= 46:
+				elif index in range(40,47):
 					classify.append("Arithmetic Keyword")
-				elif index >= 47 and index <= 49:
+				elif index in range(47,50):
 					classify.append("Comment Delimiter")
-				elif index == 50 or index == 51:
+				elif index in range(50,52):
 					classify.append("Casting Keyword")
-				elif index == 52 or index == 53:
+				elif index in range(52,54):
 					classify.append("Return Keyword")
 				elif index == 54:
 					classify.append("Calling Keyword")
-				elif index == 55 or index == 56:
+				elif index in range(55,57):
 					classify.append("Function Delimiter")
 				elif index == 57:
+					if unspacedtoken in allTokens: # get only unique identifiers
+						continue
 					classify.append("Variable Identifier")
+
+				# append to allTokens
+				allTokens.append(unspacedtoken)
 
 				# end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
 				break
@@ -239,34 +273,21 @@ def findMatch(line):
 			# if the front of the line has no match, remove.
 			# lagay mo yung first token here
 			# note: given in the line "I H/AS A", the program matches I, H, and A as keywords or identifiers, and /AS as unmatched. ideally it should read H/AS as unmatched. fix it if it becomes a problem.
-			unmatched = line.split()[0]
-			line = line.replace(unmatched, "")
+			unmatched = line.split()
 
 			# append to allTokens
-			allTokens.append(unmatched)
+			allTokens.append(unmatched.pop(0))
 			classify.append("Unknown Keyword")
+			
+			# update line
+			line = ""
 
-		# check if line is wala na
-		if re.match(r"^(\s*\n*)$", line):
-			break
+			for word in unmatched:
+				line += word
+
+		if line == "": break
 
 	return allTokens, classify
-
-def display(table, tree):
-	# make sure table is clear
-	for element in tree.get_children():
-		tree.delete(element)
-
-	lhs, rhs = list(table.keys())
-	length_line = len(table[lhs])
-	index = 0
-
-	# print to GUI
-	for i in range(length_line):
-		length_token = len(table[lhs][i])
-		for j in range(length_token):
-			tree.insert(parent='', index=END, text=index, values=(table[lhs][i][j], table[rhs][i][j]))
-			index += 1
 
 def tokenize(code):
 	# NOTE
@@ -277,7 +298,6 @@ def tokenize(code):
 
 	# tokenize
 	# assuming na di required ang newline sa YARN
-	# print(code)
 	lexTable = {}
 	tokens = []
 	classifications = []
@@ -292,12 +312,16 @@ def tokenize(code):
 
 		# we look for matches and put them in the list token
 		token, classify = findMatch(line)
+		
+		if "Variable Identifier" in classify:
+			token, classify = remove_duplicate(token, classify, tokens) # remove duplicate identifiers if any
+
 		tokens.append(token)
 		classifications.append(classify)
 
 	lexTable["Lexemes"] = tokens
 	lexTable["Classification"] = classifications
-	display(lexTable, lexemes_table)
+	fill_table(lexTable, lexemes_table)
 
 def run():
 	global code
