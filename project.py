@@ -8,10 +8,22 @@ import re
 # need a way to throw error if theres no match
 # function name gets separated bc it has spaces (sa sample)
 
+##### PROCESS #####
+# open file -> print file to text editor -> click execute (run) -> remove comments -> remove whitespaces -> tokenize (update global variable tokens then get the classification of each token)
+# fill lexemes table (lexical analyzer)
+
 ##### GLOBAL VARIABLES #####
-code = ""
+tokens = []
+line_number = 0
 
 ##### FUNCTIONS #####
+def select_file():
+	file_path = fd.askopenfilename(title="Open a LOLCODE file..", filetypes=(("lol files", ".lol"),)) # open a file dialog that shows .lol files only
+	if len(file_path) == 0: return # no file selected
+
+	file_contents = read_file(file_path) # get the file contents
+	show_file_contents(file_contents) # show file contents to GUI
+
 def read_file(filename):
 
 	file = open(filename, "r")
@@ -26,12 +38,12 @@ def show_file_contents(contents):
 	text_editor.delete(1.0, END) # make sure text editor is clear
 	text_editor.insert(1.0, contents) # print contents to GUI
 
-def select_file():
-	file_path = fd.askopenfilename(title="Open a LOLCODE file..", filetypes=(("lol files", ".lol"),)) # open a file dialog that shows .lol files only
-	if len(file_path) == 0: return # no file selected
-
-	file_contents = read_file(file_path) # get the file contents
-	show_file_contents(file_contents) # show file contents to GUI
+def run():
+	code = text_editor.get(1.0,'end-1c') # get the input from Text widget
+	code = remove_comments(code)
+	code = code.split("\n")
+	code = remove_whitespaces(code)
+	tokenize(code)
 
 def remove_comments(src_code):
 	# remove multiline comments
@@ -51,41 +63,6 @@ def remove_whitespaces(src_code):
 			temp.append(line) # append line only if it is not an empty string
 
 	return temp
-
-def fill_table(table, tree):
-	# make sure table is clear
-	for element in tree.get_children():
-		tree.delete(element)
-
-	lhs, rhs = list(table.keys())
-	count = 0
-
-	for i in range(len(table[lhs])): # per line
-		for j in range(len(table[lhs][i])): # per token
-			tree.insert(parent='', index=END, text=count, values=(table[lhs][i][j], table[rhs][i][j])) # print to GUI
-			count += 1
-
-def is_duplicate(token, token_list):
-	for line in token_list:
-		for tok in line:
-			if tok == token: 
-				return True # duplicate found
-
-	return False # no duplicate
-
-def remove_duplicate(token, classify, token_list):
-	new_token = []
-	new_classify = []
-
-	for i in range(len(token)):
-		tok = token[i]
-		if classify[i] == "Variable Identifier" and is_duplicate(tok, token_list):
-			continue # skip duplicate identifiers
-		else:
-			new_token.append(tok)
-			new_classify.append(classify[i])
-
-	return new_token, new_classify
 
 def findMatch(line):
 	# lagay yung mga regex here
@@ -259,8 +236,6 @@ def findMatch(line):
 				elif index in range(55,57):
 					classify.append("Function Delimiter")
 				elif index == 57:
-					if unspacedtoken in allTokens: # get only unique identifiers
-						continue
 					classify.append("Variable Identifier")
 
 				# append to allTokens
@@ -298,7 +273,8 @@ def tokenize(code):
 
 	# tokenize
 	# assuming na di required ang newline sa YARN
-	lexTable = {}
+	global tokens
+
 	tokens = []
 	classifications = []
 	# iterate through every line
@@ -312,25 +288,38 @@ def tokenize(code):
 
 		# we look for matches and put them in the list token
 		token, classify = findMatch(line)
-		
-		if "Variable Identifier" in classify:
-			token, classify = remove_duplicate(token, classify, tokens) # remove duplicate identifiers if any
-
 		tokens.append(token)
 		classifications.append(classify)
 
-	lexTable["Lexemes"] = tokens
-	lexTable["Classification"] = classifications
-	fill_table(lexTable, lexemes_table)
+	fill_table(lexemes_table, tokens, classifications)
 
-def run():
-	global code
+def is_duplicate(token, token_list):
+	for line in token_list:
+		for tok in line:
+			if tok == token: 
+				return True # duplicate found
 
-	code = text_editor.get(1.0,'end-1c') # get the input from Text widget
-	code = remove_comments(code)
-	code = code.split("\n")
-	code = remove_whitespaces(code)
-	tokenize(code)
+	return False # no duplicate
+
+def fill_table(tree, lhs, rhs):
+	# make sure table is clear
+	for element in tree.get_children():
+		tree.delete(element)
+
+	count = 0
+
+	for i in range(len(lhs)): # per line
+		for j in range(len(lhs[i])): # per token
+
+			lhs_value = lhs[i][j]
+			rhs_value = rhs[i][j]
+
+			if rhs_value == "Variable Identifier" and (lhs_value in lhs[i][:j] or is_duplicate(lhs_value, lhs[:i])):
+				continue # print only unique identifiers
+
+			tree.insert(parent='', index=END, text=count, values=(lhs_value, rhs_value)) # print to GUI
+			count += 1
+
 
 
 ##### GUI #####
