@@ -47,7 +47,7 @@ def run():
 
 def remove_comments(src_code):
 	# remove multiline comments
-	src_code = re.sub(r"(^|\n)( |\t)*OBTW(\s+[^TLDR]+)?\n([^TLDR]+\n+)*(\s)*TLDR( |\t)*(?=(\n|$))", r"\nOBTW\nTLDR\n", src_code) 
+	src_code = re.sub(r"(^|\n)( |\t)*OBTW\s*(\s+((?!TLDR).)*)*\n( |\t)*TLDR( |\t)*(?=(\n|$))", r"\nOBTW\nTLDR\n", src_code) 
 	
 	# remove single line comments
 	src_code = re.sub(r"(^|\s)BTW.*", "\nBTW", src_code)
@@ -68,9 +68,9 @@ def findMatch(line):
 	# lagay yung mga regex here
 
 	#Literal(0-4)
+	yarn = r"(\")(.*?)(\")"
 	numbr = r"-?[0-9]+"
 	numbar = r"-?[0-9]+[\.][0-9]*"
-	yarn = r"(\")([^\"]*)(\")"
 	troof = r"(WIN|FAIL)"
 	typeLiteral = r"(NUMBR|NUMBAR|YARN|TROOF|NOOB)"
 
@@ -169,38 +169,39 @@ def findMatch(line):
 	#Variable Identifier(57)
 	identifier = r"[a-zA-Z][a-zA-Z0-9_]*"
 
+	#Unknown Keyword (58)
+	unknown = r".*?"
 
-	regEx = [numbr, numbar,yarn, troof, typeLiteral,
+
+	regEx = [yarn, numbr, numbar, troof, typeLiteral,
 		strdelimiter, hai, kthxbye, ihasa, itz, visible, gimmeh,
 		r, yarly, nowai, orly, omg, omgwtf, oic, wtf, uppin,
 		nerfin, til, wile, imouttayr, yr, iminyr, mebbe,
 		smoosh, mkay, an, a, bothsaem, diffrint, bothof, eitherof, wonof, notKey, anyof, allof,
 		sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof,
 		btw, obtw, tldr, maek, isnowa, foundyr, gtfo, iiz, howizi, ifusayso,
-		identifier]
+		identifier, unknown]
 
 	# problem: both saem gets separated the second time. no clue why
 	# note: PANO PAG WALANG MATCH AT ALL
 	allTokens = []
 	classify = []
-	while True: # we search for tokens at the front of the line over and over, iterating thru the tokens every time until empty na yung line.
-		hasMatch = False
+	while line: # we search for tokens at the front of the line over and over, iterating thru the tokens every time until empty na yung line.
 		for index, r in enumerate(regEx):
 			# search for the current r in the line. searches the FRONT of the line.
-			token_regex = r"^"+r+r"(\s|$)"
+			token_regex = r"^"+r+r"(\s+|$)"
 			token = re.search(token_regex, line)
-			if token:
-				hasMatch = True # gawing true, tas if irerepeat yung pagsearch, gagawin ulet false
 
+			if token:
 				# remove the match from the line and remove the spaces
 				unspacedtoken = token.group().strip()
-				line = re.sub(token_regex, "", line).strip()
+				line = re.sub(token_regex, "", line)
 
 				# append to allTokens
 				allTokens.append(unspacedtoken)
 
 				#classify token
-				if index == 2:
+				if index == 0:
 					o_delim = token.group(1) # string delimiter
 					string = token.group(2) # actual yarn
 					c_delim = token.group(3) # string delimiter
@@ -212,7 +213,7 @@ def findMatch(line):
 					classify.append("String Delimiter")
 					classify.append("Literal")
 					classify.append("String Delimiter")
-				elif index in range(0,5):
+				elif index in range(1,5):
 					classify.append("Literal")
 				# elif index == 5: // check if this is still necessary before deleting
 				# 	classify.append("String Delimiter")
@@ -252,27 +253,11 @@ def findMatch(line):
 					classify.append("Function Delimiter")
 				elif index == 57:
 					classify.append("Variable Identifier")
+				else:
+					classify.append("Unknown Keyword")
 
 				# end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
 				break
-
-		if hasMatch==False:
-			# if the front of the line has no match, remove.
-			# lagay mo yung first token here
-			# note: given in the line "I H/AS A", the program matches I, H, and A as keywords or identifiers, and /AS as unmatched. ideally it should read H/AS as unmatched. fix it if it becomes a problem.
-			unmatched = line.split()
-
-			# append to allTokens
-			allTokens.append(unmatched.pop(0))
-			classify.append("Unknown Keyword")
-			
-			# update line
-			line = ""
-
-			for word in unmatched:
-				line += word
-
-		if line == "": break
 
 	return allTokens, classify
 
@@ -305,14 +290,6 @@ def tokenize(code):
 
 	fill_table(lexemes_table, tokens, classifications)
 
-def is_duplicate(token, token_list):
-	for line in token_list:
-		for tok in line:
-			if tok == token: 
-				return True # duplicate found
-
-	return False # no duplicate
-
 def fill_table(tree, lhs, rhs):
 	# make sure table is clear
 	for element in tree.get_children():
@@ -322,12 +299,8 @@ def fill_table(tree, lhs, rhs):
 
 	for i in range(len(lhs)): # per line
 		for j in range(len(lhs[i])): # per token
-
 			lhs_value = lhs[i][j]
 			rhs_value = rhs[i][j]
-
-			if rhs_value == "Variable Identifier" and (lhs_value in lhs[i][:j] or is_duplicate(lhs_value, lhs[:i])):
-				continue # print only unique identifiers
 
 			tree.insert(parent='', index=END, text=count, values=(lhs_value, rhs_value)) # print to GUI
 			count += 1
