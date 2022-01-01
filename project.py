@@ -39,18 +39,25 @@ def show_file_contents(contents):
 	text_editor.insert(1.0, contents) # print contents to GUI
 
 def run():
+	# reset some variables
+	global line_number, tokens
+	line_number = 0
+	console.delete(1.0, END)
+
 	code = text_editor.get(1.0,'end-1c') # get the input from Text widget
 	code = remove_comments(code)
 	code = code.split("\n")
 	code = remove_whitespaces(code)
 	tokenize(code)
+	tokens = remove_comment_delims()
+	syntax_analyzer()
 
 def remove_comments(src_code):
 	# remove multiline comments
-	src_code = re.sub(r"(^|\n)( |\t)*OBTW\s*(\s+((?!TLDR).)*)*\n( |\t)*TLDR( |\t)*(?=(\n|$))", r"\nOBTW\nTLDR\n", src_code) 
+	src_code = re.sub(r"(^|\n)( |\t)*OBTW\s*(\s+((?!TLDR).)*)*\n( |\t)*TLDR( |\t)*(?=(\n|$))", r"\nOBTW\nTLDR", src_code) 
 	
 	# remove single line comments
-	src_code = re.sub(r"(^|\s)BTW.*", "\nBTW", src_code)
+	src_code = re.sub(r"(^|\s)BTW.*", " BTW", src_code)
 
 	return src_code
 
@@ -65,8 +72,6 @@ def remove_whitespaces(src_code):
 	return temp
 
 def findMatch(line):
-	# lagay yung mga regex here
-
 	#Literal(0-4)
 	yarn = r"(\")(.*?)(\")"
 	numbr = r"-?[0-9]+"
@@ -172,7 +177,6 @@ def findMatch(line):
 	#Unknown Keyword (58)
 	unknown = r".*?"
 
-
 	regEx = [yarn, numbr, numbar, troof, typeLiteral,
 		strdelimiter, hai, kthxbye, ihasa, itz, visible, gimmeh,
 		r, yarly, nowai, orly, omg, omgwtf, oic, wtf, uppin,
@@ -182,11 +186,10 @@ def findMatch(line):
 		btw, obtw, tldr, maek, isnowa, foundyr, gtfo, iiz, howizi, ifusayso,
 		identifier, unknown]
 
-	# problem: both saem gets separated the second time. no clue why
-	# note: PANO PAG WALANG MATCH AT ALL
 	allTokens = []
 	classify = []
-	while line: # we search for tokens at the front of the line over and over, iterating thru the tokens every time until empty na yung line.
+
+	while line: # we search for tokens until line is empty
 		for index, r in enumerate(regEx):
 			# search for the current r in the line. searches the FRONT of the line.
 			token_regex = r"^"+r+r"(\s+|$)"
@@ -262,33 +265,17 @@ def findMatch(line):
 	return allTokens, classify
 
 def tokenize(code):
-	# NOTE
-		# throw error if may OBTW or TLDR na nasa same line as other statements?
-		# implement this sa checking syntax siguro, for now tokenizing
-			# we check if there's an OBTW and TLDR in there maybe? tas throw error if meron
-			# this does not match lines na may OBTW na kasama with other lines
-
-	# tokenize
-	# assuming na di required ang newline sa YARN
 	global tokens
 
 	tokens = []
 	classifications = []
-	# iterate through every line
-	for line in code:
-		# separate everything, ignore all spaces
-		# check keywords by:
-		# creating regex just as a string
-		# putthing them in a list
-		# iterate through the list
-		# if there is a match, we append the match to the list of tokens
 
-		# we look for matches and put them in the list token
-		token, classify = findMatch(line)
+	for line in code: # iterate through every line
+		token, classify = findMatch(line) # get the tokens and their class of each line
 		tokens.append(token)
 		classifications.append(classify)
 
-	fill_table(lexemes_table, tokens, classifications)
+	fill_table(lexemes_table, tokens, classifications) # fill the lexemes table in the GUI
 
 def fill_table(tree, lhs, rhs):
 	# make sure table is clear
@@ -304,6 +291,97 @@ def fill_table(tree, lhs, rhs):
 
 			tree.insert(parent='', index=END, text=count, values=(lhs_value, rhs_value)) # print to GUI
 			count += 1
+
+##### SYNTAX ANALYZER #####
+
+def get_line(index):
+	string = ''
+
+	if index >= len(tokens): # out of bounds
+		return string
+
+	for word in tokens[index]: # get the whole line as string at line index
+		string += word + ' '
+
+	return string.strip() 
+
+def remove_comment_delims():
+	global tokens
+	length = len(tokens)
+	new_tokens = []
+
+	for i in range(length):
+		string = get_line(i)
+		if string=="BTW": # single line comment
+			continue
+		elif "BTW" in tokens[i]: # single line comment with another statement
+			tokens[i].pop(tokens[i].index("BTW"))
+		elif string=="OBTW" and get_line(i+1)=="TLDR": # opening multi line comment
+			continue
+		elif string=="TLDR" and i-1 > 0: # closing multi line comment TLDR
+			if get_line(i-1)=="OBTW":
+				continue
+		new_tokens.append(tokens[i])
+
+	return new_tokens
+
+def output_console(contents):
+	console.insert(END, contents) # print contents to GUI
+	console.insert(END, "\n") # print contents to GUI
+
+def syntax_analyzer():
+	global line_number, tokens
+
+	if check_token("HAI", 0) > 0: # check if program starts with HAI
+		tokens.pop(0) 
+	
+		if len(tokens) > 0: 
+			line_number = -1 
+			if check_token("KTHXBYE", 0) > 0: # check if program ends with KTHXBYE
+				tokens.pop(-1)
+				parse_code(0) # check now the entire contents of the program
+			else: # program has no KTHXBYE
+				output_console("error at: " + get_line(line_number))
+		else: # program only has HAI
+			output_console("error at: HAI")
+
+	else: # program has no HAI
+		output_console("error at: " + get_line(line_number))
+
+def get_current_token(index):
+	current_line = tokens[line_number]
+
+	if index >= len(current_line):
+		return None
+	else:
+		return current_line[index]
+
+def check_token(needed_token, index):
+	global line_number
+
+	current_token = get_current_token(index)
+
+	if not current_token: # reached the EOL
+		line_number += 1 
+		return 0
+	elif current_token==needed_token: # correct syntax
+		return index+1
+	else:
+		return -1 # wrong syntax
+
+def parse_code(index):
+	# start by checking if there are invalid comments
+	begin = True
+
+	for i in range(len(tokens)):
+		line = tokens[i]
+		if ("OBTW" in line) or ("TLDR" in line): # error found
+			output_console("error at: " + get_line(i))
+			begin = False
+			break
+
+	if begin: # no more comment errors
+		pass # THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
 
 
 
