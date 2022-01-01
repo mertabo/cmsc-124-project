@@ -305,14 +305,6 @@ def tokenize(code):
 
 	fill_table(lexemes_table, tokens, classifications)
 
-def is_duplicate(token, token_list):
-	for line in token_list:
-		for tok in line:
-			if tok == token: 
-				return True # duplicate found
-
-	return False # no duplicate
-
 def fill_table(tree, lhs, rhs):
 	# make sure table is clear
 	for element in tree.get_children():
@@ -322,12 +314,8 @@ def fill_table(tree, lhs, rhs):
 
 	for i in range(len(lhs)): # per line
 		for j in range(len(lhs[i])): # per token
-
 			lhs_value = lhs[i][j]
 			rhs_value = rhs[i][j]
-
-			if rhs_value == "Variable Identifier" and (lhs_value in lhs[i][:j] or is_duplicate(lhs_value, lhs[:i])):
-				continue # print only unique identifiers
 
 			tree.insert(parent='', index=END, text=count, values=(lhs_value, rhs_value)) # print to GUI
 			count += 1
