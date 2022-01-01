@@ -70,7 +70,7 @@ def findMatch(line):
 	#Literal(0-4)
 	numbr = r"-?[0-9]+"
 	numbar = r"-?[0-9]+[\.][0-9]*"
-	yarn = r"(\")([^\"]*)(\")"
+	yarn = r"(?<=['\"]).*(?=['\"])"
 	troof = r"(WIN|FAIL)"
 	typeLiteral = r"(NUMBR|NUMBAR|YARN|TROOF|NOOB)"
 
@@ -196,26 +196,11 @@ def findMatch(line):
 				unspacedtoken = token.group().strip()
 				line = re.sub(token_regex, "", line).strip()
 
-				# append to allTokens
-				allTokens.append(unspacedtoken)
-
 				#classify token
-				if index == 2:
-					o_delim = token.group(1) # string delimiter
-					string = token.group(2) # actual yarn
-					c_delim = token.group(3) # string delimiter
-					
-					allTokens[-1] = o_delim
-					allTokens.append(string)
-					allTokens.append(c_delim)
-
-					classify.append("String Delimiter")
+				if index in range(0,5):
 					classify.append("Literal")
+				elif index == 5:
 					classify.append("String Delimiter")
-				elif index in range(0,5):
-					classify.append("Literal")
-				# elif index == 5: // check if this is still necessary before deleting
-				# 	classify.append("String Delimiter")
 				elif index in range(6,8):
 					classify.append("Code Delimiter")
 				elif index == 8:
@@ -252,6 +237,9 @@ def findMatch(line):
 					classify.append("Function Delimiter")
 				elif index == 57:
 					classify.append("Variable Identifier")
+
+				# append to allTokens
+				allTokens.append(unspacedtoken)
 
 				# end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
 				break
