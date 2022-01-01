@@ -1,68 +1,57 @@
-
-
-NUMBAR NUMBAR NUMBAR1 D D D
-I H/AS A
-BOTH SAEM BOTH SAEM
 OBTW
-comment
+This is a sample program in lolcode that computes for the age in years or months.
 TLDR
-HAI
-IM IN YR
-OBTW hi TLDR
-BTW hello
-HOW IZ I POWERTWO YR NUM BTW he
-   BTW RETURN 1    IF 2 TO POWER OF 0
-   BOTH SAEM NUM AN 0 BTW HI
-   O RLY?
-      YA RLY
-      FOUND YR 1
-   OIC
-  
-   BTW CALCULATE 2 TO POWER OF NUM
-   I HAS A INDEX ITZ 0
-   OBTW
-   comment
-   TLDR  I HAS A TOTAL ITZ 1
-   IM IN YR LOOP UPPIN YR INDEX TIL BOTH SAEM INDEX AN NUM
-      TOTAL R PRODUKT OF TOTAL AN 2
-   IM OUTTA YR LOOP 
-   OBTW
-   comment 
-   TLDR
-   OBTW this is a comment
-   pls ignore this
-   TLDR
-  
-   FOUND YR TOTAL
-   IF U SAY SO
-   BTW OUTPUT: 8
-   BTW yeah
-   VISIBLE I IZ POWERTWO YR 4 MKAY
+
+HAI 1.2
+  I HAS A choice
+
+  VISIBLE "1. Age in years"
+  VISIBLE "2. Age in months"
+  VISIBLE "3. Exit"
+  VISIBLE "What do you want to do? "
+  GIMMEH choice
+
+  OBTW
+    line below is not required
+    it is only done here since original lolcode specs
+      specify that inputs are always YARN
+    for your project however, input is implicitly typecasted
+      to NUMBR or NUMBAR if possible.
+    you may comment the line below if you will use this program
+      for your project
+  TLDR
+  choice R MAEK choice A NUMBR
+
+  I HAS A year
+
+  IT R choice   BTW IT = choice
+  WTF?          BTW WTF? uses IT variable
+  OMG 1
+    VISIBLE "enter year"
+    GIMMEH year
+
+    BTW 2020-year
+    VISIBLE DIFF OF 2020 AN year " years old"
+    GTFO
+  OMG 2
+    VISIBLE "enter year"
+    GIMMEH year
+    
+    BTW (2020-year)*12
+    VISIBLE PRODUKT OF DIFF OF 2020 AN year AN 12 " months old"
+    GTFO
+  OMGWTF
+    VISIBLE "choice is not 1 or 2"
+  OIC
+
+  BTW choice!=1 && choice!=2 && choice!=3
+  ALL OF DIFFRINT choice AN 1 AN DIFFRINT choice AN 2 AN DIFFRINT choice AN 3
+
+  O RLY?
+    YA RLY
+      VISIBLE "invalid input!" BTW if choice is not 1,2,3 then invalid input
+    NO WAI
+      VISIBLE "goodbye!"
+  OIC
+
 KTHXBYE
-OBTW
-comment
-TLDR
-hi 
-OBTWhi
-
-
-TLDR
-OBTW hi
-
-TLDR
-OBTW hi
-TLDR
-OBTW
-
-
-
-
-   TLDR
-OBTW TLDR
-OBTWhi
-TLDR OBTW hi 
-TLDR
-OBTW
-TLDR hi
-
-
