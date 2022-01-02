@@ -15,6 +15,7 @@ import re
 ##### GLOBAL VARIABLES #####
 tokens = []
 line_number = 0
+symbols = {"IT": "NOOB"}
 
 ##### FUNCTIONS #####
 def select_file():
@@ -302,11 +303,19 @@ def fill_table(tree, lhs, rhs):
 
 ##### SYNTAX ANALYZER #####
 
+def find_line(needed_token, start, end):
+	max_length = len(tokens)
+	if start < max_length and end <= max_length:
+		for i in range(start, end):
+			if tokens[i][0]==needed_token: # found the line where token is found
+				return i
+	return -1
+
 def get_line(index):
 	string = ''
 
 	if index >= len(tokens): # out of bounds
-		return string
+		return "KTHXBYE"
 
 	for word in tokens[index]: # get the whole line as string at line index
 		string += word + ' '
@@ -339,20 +348,15 @@ def syntax_analyzer():
 	global tokens
 
 	if get_line(0)=="HAI": # check if program starts with HAI only
-		flag = False # search if there is KTHXBYE
-		i = 0
-		for i in range(len(tokens)):
-			if tokens[i][0]=="KTHXBYE":
-				flag = True
-				break
+		i = find_line("KTHXBYE", 0, len(tokens)) # check if there is KTHXBYE
 		
-		if flag:
+		if i > -1:
 			tokens = tokens[:i] # exclude everything after the [first] KTHXBYE
 			tokens.pop(0) # exclude everything before the [first] HAI
-			if parse_comments(): # check for comment errors
-				while statement():
-					if line_number >= len(tokens):
-						break # check the rest of the code
+			if tokens and parse_comments(): # check for comment errors
+				while line_number < len(tokens): # check the rest of the code
+					if not statement(False):
+						break 
 		else:
 			output_console("error at: " + get_line(i)) # program has no KTHXBYE
 	else: # program does not start with HAI
@@ -388,14 +392,13 @@ def check_token(needed_token, index):
 	else:
 		return -1 # wrong syntax
 
-def statement():
+def statement(is_code_block):
 	# THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
 	global line_number
 	token = get_current_token(0)
-	# print(token)
 
 	# VARIABLE DECLARATION
-	if token=="I HAS A":
+	if token=="I HAS A" and not is_code_block:
 		print("I HAS A")
 
 	# ARITHMETIC OPERATIONS
@@ -459,15 +462,15 @@ def statement():
 	elif token=="IM IN YR":
 		print("IM IN YR")
 
-	# FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
-	# FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
-	# FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
-	# MISUSED KEYWORDS
+	#### FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
+	#### FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
+	#### FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
 	
+	# MISUSED KEYWORDS
 	elif token=="ITZ" or token=="R" or token=="YA RLY" or token=="NO WAI" or token=="O RLY?" or token=="OMG" or token=="OMGWTF" or token=="OIC" or token=="UPPIN" or token=="NERFIN" or token=="TIL" or token=="WILE" or token=="IM OUTTA YR" or token=="YR" or token=="MEBBE" or token=="MKAY" or token=="AN" or token=="A" or token=="IS NOW A":
 		output_console("error at: " + get_line(line_number))
 		return False
-
+	
 	else:
 		regex = r"[a-zA-Z][a-zA-Z0-9_]*$"
 		
@@ -480,37 +483,81 @@ def statement():
 	line_number += 1
 	return True
 
+def find_end_block(needed_token, incrementor, start, end):
+	max_length = len(tokens)
+	if start >= max_length and end >= max_length:
+		return -1
+
+	count = 1
+	for i in range(start, end):
+		token = tokens[i][0]
+		if token==needed_token:
+			count -= 1
+		elif token in incrementor:
+			count += 1
+
+		if count==0:
+			return i
+	return -1
+
+
 def if_then():
+	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
+	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
+	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
+
 	global line_number
 
-	if get_line(line_number)=="O RLY?": # O RLY?
+	# O RLY?
+	if get_line(line_number)=="O RLY?": 
 		line_number += 1
-		
-		if get_line(line_number)=="YA RLY": # YA RLY
-			line_number += 1
-
-			if statement():
-				line = get_line(line_number)
-				
-				if line=="NO WAI": # NO WAI [OPTIONAL]
-					line_number += 1
-					if not statement():
-						return False
-					line = get_line(line_number)
-
-				if line=="OIC": # OIC
-					line_number += 1
-				else:
-					output_console("error at: " + get_line(line_number))
-					return False
-			else:
-				return False
-		else:
-			output_console("error at: " + get_line(line_number))
-			return False
 	else:
-		output_console("error at: " + get_line(line_number))
+		output_console("error at: " + get_line(line_number)) # NO O RLY? FOUND
 		return False
+
+	# YA RLY
+	index_ya_rly = find_line("YA RLY", line_number, line_number+1)
+
+	if index_ya_rly > -1 and get_line(index_ya_rly)=="YA RLY":
+		line_number += 1
+	else:
+		output_console("error at: " + get_line(line_number)) # NO YA RLY FOUND
+		return False
+
+	# OIC
+	index_oic = find_end_block("OIC", ["O RLY?", "WTF?"], line_number, len(tokens))
+	has_oic = index_oic > -1 and get_line(index_oic)=="OIC"
+
+	if has_oic:
+		# NO WAI
+		index_no_wai = find_line("NO WAI", line_number, index_oic+1)
+		has_no_wai = index_no_wai > -1 and get_line(index_no_wai)=="NO WAI"
+
+		# check the value of IT
+		it = symbols["IT"]
+		fail = ['', 0, "NOOB"]
+		
+		if it in fail: # FALSE
+			if has_no_wai: # has NO WAI clause
+				line_number = index_no_wai+1
+			else: # no NO WAI clause
+				line_number = index_oic+1
+				return True
+		elif has_no_wai: # TRUE
+			del tokens[index_no_wai:index_oic] # delete the NO WAI part
+			index_oic -= (index_oic - index_no_wai)
+
+		while line_number < index_oic:
+			if not statement(True):
+				return False
+
+		line_number = index_oic+1
+		return True
+
+	else:
+		output_console("error at: " + get_line(index_oic)) # NO OIC FOUND
+		return False
+
 
 ##### GUI #####
 # instantiate tkinter window
