@@ -45,11 +45,17 @@ def run():
 	console.delete(1.0, END)
 
 	code = text_editor.get(1.0,'end-1c') # get the input from Text widget
-	if code.strip()=='': return
+	if code.strip()=='': return # no input
+
 	code = remove_comments(code)
 	code = code.split("\n")
 	code = remove_whitespaces(code)
+	
 	tokenize(code)
+	has_lexical_errors = console.get(1.0,'end-1c') # get the input from Text widget
+	
+	if has_lexical_errors: return # has unknown keywords
+
 	tokens = remove_comment_delims()
 	syntax_analyzer()
 
@@ -258,6 +264,7 @@ def findMatch(line):
 				elif index == 57:
 					classify.append("Variable Identifier")
 				else:
+					output_console("error::unknown keyword: " + unspacedtoken)
 					classify.append("Unknown Keyword")
 
 				# end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
@@ -343,7 +350,9 @@ def syntax_analyzer():
 			tokens = tokens[:i] # exclude everything after the [first] KTHXBYE
 			tokens.pop(0) # exclude everything before the [first] HAI
 			if parse_comments(): # check for comment errors
-				parse_code(0)
+				while statement():
+					if line_number >= len(tokens):
+						break # check the rest of the code
 		else:
 			output_console("error at: " + get_line(i)) # program has no KTHXBYE
 	else: # program does not start with HAI
@@ -379,10 +388,129 @@ def check_token(needed_token, index):
 	else:
 		return -1 # wrong syntax
 
-def parse_code(index):
-	pass # THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
+def statement():
+	# THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
+	global line_number
+	token = get_current_token(0)
+	# print(token)
 
+	# VARIABLE DECLARATION
+	if token=="I HAS A":
+		print("I HAS A")
 
+	# ARITHMETIC OPERATIONS
+	elif token=="SUM OF":
+		print("SUM OF")
+	elif token=="DIFF OF":
+		print("DIFF OF")
+	elif token=="PRODUKT OF":
+		print("PRODUKT OF")
+	elif token=="QUOSHUNT OF":
+		print("QUOSHUNT OF")
+	elif token=="MOD OF":
+		print("MOD OF")
+	elif token=="BIGGR OF":
+		print("BIGGR OF")
+	elif token=="SMALLR OF":
+		print("SMALLR OF")
+
+	# BOOLEAN OPERATIONS
+	elif token=="BOTH OF":
+		print("BOTH OF")
+	elif token=="EITHER OF":
+		print("EITHER OF")
+	elif token=="WON OF":
+		print("WON OF")
+	elif token=="NOT":
+		print("NOT")
+	elif token=="ALL OF":
+		print("ALL OF")
+	elif token=="ANY OF":
+		print("ANY OF")
+
+	# COMPARISON OPERATIONS
+	elif token=="BOTH SAEM":
+		print("BOTH SAEM")
+	elif token=="DIFFRINT":
+		print("DIFFRINT")
+
+	# CONCATENTATION
+	elif token=="SMOOSH":
+		print("SMOOSH")
+
+	# TYPECAST
+	elif token=="MAEK":
+		print("MAEK")
+
+	# INPUT/OUTPUT
+	elif token=="VISIBLE":
+		print("VISIBLE")
+	elif token=="GIMMEH":
+		print("GIMMEH")
+
+	# IF-THEN
+	elif token=="O RLY?":
+		return if_then()
+
+	# SWITCH CASE
+	elif token=="WTF?":
+		print("WTF?")
+	# LOOP
+	elif token=="IM IN YR":
+		print("IM IN YR")
+
+	# FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
+	# FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
+	# FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
+	# MISUSED KEYWORDS
+	
+	elif token=="ITZ" or token=="R" or token=="YA RLY" or token=="NO WAI" or token=="O RLY?" or token=="OMG" or token=="OMGWTF" or token=="OIC" or token=="UPPIN" or token=="NERFIN" or token=="TIL" or token=="WILE" or token=="IM OUTTA YR" or token=="YR" or token=="MEBBE" or token=="MKAY" or token=="AN" or token=="A" or token=="IS NOW A":
+		output_console("error at: " + get_line(line_number))
+		return False
+
+	else:
+		regex = r"[a-zA-Z][a-zA-Z0-9_]*$"
+		
+		if re.search(regex, token): # [RE]ASSIGNMENTS
+			print("IDENTIFIER")
+		else: # UNKNOWN PATTERN
+			output_console("error at: " + get_line(line_number))
+			return False
+
+	line_number += 1
+	return True
+
+def if_then():
+	global line_number
+
+	if get_line(line_number)=="O RLY?": # O RLY?
+		line_number += 1
+		
+		if get_line(line_number)=="YA RLY": # YA RLY
+			line_number += 1
+
+			if statement():
+				line = get_line(line_number)
+				
+				if line=="NO WAI": # NO WAI [OPTIONAL]
+					line_number += 1
+					if not statement():
+						return False
+					line = get_line(line_number)
+
+				if line=="OIC": # OIC
+					line_number += 1
+				else:
+					output_console("error at: " + get_line(line_number))
+					return False
+			else:
+				return False
+		else:
+			output_console("error at: " + get_line(line_number))
+			return False
+	else:
+		output_console("error at: " + get_line(line_number))
+		return False
 
 ##### GUI #####
 # instantiate tkinter window
