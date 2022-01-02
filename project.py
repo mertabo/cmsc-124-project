@@ -45,6 +45,7 @@ def run():
 	console.delete(1.0, END)
 
 	code = text_editor.get(1.0,'end-1c') # get the input from Text widget
+	if code.strip()=='': return
 	code = remove_comments(code)
 	code = code.split("\n")
 	code = remove_whitespaces(code)
@@ -57,7 +58,7 @@ def remove_comments(src_code):
 	src_code = re.sub(r"(^|\n)( |\t)*OBTW\s*(\s+((?!TLDR).)*)*\n( |\t)*TLDR( |\t)*(?=(\n|$))", r"\nOBTW\nTLDR", src_code) 
 	
 	# remove single line comments
-	src_code = re.sub(r"(^|\s)BTW.*", " BTW", src_code)
+	src_code = re.sub(r"(^|\s)BTW( |\t)*(( |\t)+.*)?(?=(\n|$))", "\nBTW", src_code)
 
 	return src_code
 
@@ -314,11 +315,9 @@ def remove_comment_delims():
 		string = get_line(i)
 		if string=="BTW": # single line comment
 			continue
-		elif "BTW" in tokens[i]: # single line comment with another statement
-			tokens[i].pop(tokens[i].index("BTW"))
 		elif string=="OBTW" and get_line(i+1)=="TLDR": # opening multi line comment
 			continue
-		elif string=="TLDR" and i-1 > 0: # closing multi line comment TLDR
+		elif string=="TLDR" and i-1 >= 0: # closing multi line comment TLDR
 			if get_line(i-1)=="OBTW":
 				continue
 		new_tokens.append(tokens[i])
@@ -330,23 +329,34 @@ def output_console(contents):
 	console.insert(END, "\n") # print contents to GUI
 
 def syntax_analyzer():
-	global line_number, tokens
+	global tokens
 
-	if check_token("HAI", 0) > 0: # check if program starts with HAI
-		tokens.pop(0) 
-	
-		if len(tokens) > 0: 
-			line_number = -1 
-			if check_token("KTHXBYE", 0) > 0: # check if program ends with KTHXBYE
-				tokens.pop(-1)
-				parse_code(0) # check now the entire contents of the program
-			else: # program has no KTHXBYE
-				output_console("error at: " + get_line(line_number))
-		else: # program only has HAI
-			output_console("error at: HAI")
-
-	else: # program has no HAI
+	if get_line(0)=="HAI": # check if program starts with HAI only
+		flag = False # search if there is KTHXBYE
+		i = 0
+		for i in range(len(tokens)):
+			if tokens[i][0]=="KTHXBYE":
+				flag = True
+				break
+		
+		if flag:
+			tokens = tokens[:i] # exclude everything after the [first] KTHXBYE
+			tokens.pop(0) # exclude everything before the [first] HAI
+			if parse_comments(): # check for comment errors
+				parse_code(0)
+		else:
+			output_console("error at: " + get_line(i)) # program has no KTHXBYE
+	else: # program does not start with HAI
 		output_console("error at: " + get_line(line_number))
+
+def parse_comments():
+	for i in range(len(tokens)):
+		line = tokens[i]
+		if ("OBTW" in line) or ("TLDR" in line): # comment error found
+			output_console("error at: " + get_line(i))
+			return False
+
+	return True # no errors in comments
 
 def get_current_token(index):
 	current_line = tokens[line_number]
@@ -370,18 +380,7 @@ def check_token(needed_token, index):
 		return -1 # wrong syntax
 
 def parse_code(index):
-	# start by checking if there are invalid comments
-	begin = True
-
-	for i in range(len(tokens)):
-		line = tokens[i]
-		if ("OBTW" in line) or ("TLDR" in line): # error found
-			output_console("error at: " + get_line(i))
-			begin = False
-			break
-
-	if begin: # no more comment errors
-		pass # THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
+	pass # THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
 
 
 
