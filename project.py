@@ -16,6 +16,7 @@ import re
 tokens = []
 line_number = 0
 symbols = {"IT": "NOOB"}
+is_break = False # for loops
 
 ##### FUNCTIONS #####
 def select_file():
@@ -457,7 +458,9 @@ def statement(is_code_block):
 
 	# SWITCH CASE
 	elif token=="WTF?":
-		print("WTF?")
+		return switch_case()
+		# print("WTF?")
+
 	# LOOP
 	elif token=="IM IN YR":
 		print("IM IN YR")
@@ -467,7 +470,13 @@ def statement(is_code_block):
 	#### FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
 	
 	# MISUSED KEYWORDS
-	elif token=="ITZ" or token=="R" or token=="YA RLY" or token=="NO WAI" or token=="O RLY?" or token=="OMG" or token=="OMGWTF" or token=="OIC" or token=="UPPIN" or token=="NERFIN" or token=="TIL" or token=="WILE" or token=="IM OUTTA YR" or token=="YR" or token=="MEBBE" or token=="MKAY" or token=="AN" or token=="A" or token=="IS NOW A":
+	elif token=="GTFO" and is_code_block:
+		global is_break
+		is_break = True
+		line_number += 1
+		return True
+
+	elif token=="GTFO" or token=="ITZ" or token=="R" or token=="YA RLY" or token=="NO WAI" or token=="O RLY?" or token=="OMG" or token=="OMGWTF" or token=="OIC" or token=="UPPIN" or token=="NERFIN" or token=="TIL" or token=="WILE" or token=="IM OUTTA YR" or token=="YR" or token=="MEBBE" or token=="MKAY" or token=="AN" or token=="A" or token=="IS NOW A":
 		output_console("error at: " + get_line(line_number))
 		return False
 	
@@ -485,28 +494,72 @@ def statement(is_code_block):
 
 def find_end_block(needed_token, incrementor, start, end):
 	max_length = len(tokens)
-	if start >= max_length and end >= max_length:
+	if start >= max_length and end > max_length:
 		return -1
 
 	count = 1
 	for i in range(start, end):
 		token = tokens[i][0]
+
 		if token==needed_token:
 			count -= 1
 		elif token in incrementor:
 			count += 1
 
-		if count==0:
+		if count==0: # found the pair/end of block code
 			return i
 	return -1
 
+def find_keyword(needed_token, start, end):
+	while start < end:
+		token = tokens[start][0]
+		if token=="O RLY?" or token=="WTF?": # skip if-else and switch-case
+			start = find_end_block("OIC", ["O RLY?", "WTF?"], start+1, end)
+			if start < 0:
+				return -1 
+		elif token=="IM IN YR": # skip loops
+			start = find_end_block("IM OUTTA YR", ["IM IN YR"], start+1, end)
+			if start < 0:
+				return -1
+		elif token==needed_token:
+			return start
+		start += 1
+	return -2 # no keyword found
+
+def validate_blocks(start, end): # checks if blocks are empty
+	#IM IN YR
+	#YA RLY, NO WAI, OMG, OMGWTF, GTFO, OIC, IM OUTTA YR
+	invalid = ["YA RLY", "NO WAI", "OMG", "OMGWTF", "OIC", "IM OUTTA YR"]
+
+	for i in range(start, end):
+		next_statement = tokens[i+1][0]
+		token = tokens[i][0]
+		if token=="OMG":
+			if next_statement in invalid:
+				return [False, i+1]
+			if len(tokens[i]) > 1:
+				literal = tokens[i][1]
+				if literal.isdigit() or literal.replace('.', '', 1).isdigit() or literal=='"' or literal in ["WIN", "FAIL"]: 
+					continue
+			return [False, i]
+		elif token=="IM IN YR": 
+			# check loop
+			if next_statement in invalid:
+				return [False, i+1]
+		elif token=="OIC" or token=="IM OUTTA YR":
+			continue
+		elif token in invalid:
+			if next_statement in invalid:
+				return [False, i+1]
+
+	return [True, end]
 
 def if_then():
 	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
 	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
 	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
 
-	global line_number
+	global line_number, tokens
 
 	# O RLY?
 	if get_line(line_number)=="O RLY?": 
@@ -530,13 +583,20 @@ def if_then():
 
 	if has_oic:
 		# NO WAI
-		index_no_wai = find_line("NO WAI", line_number, index_oic+1)
+		index_no_wai = find_keyword("NO WAI", line_number, index_oic)
 		has_no_wai = index_no_wai > -1 and get_line(index_no_wai)=="NO WAI"
+
+		# verify all blocks found inside (even in nested if then)
+		is_valid = validate_blocks(index_ya_rly, index_oic)
+
+		if not is_valid[0]:
+			output_console("error at: " + get_line(is_valid[1]))
+			return False
 
 		# check the value of IT
 		it = symbols["IT"]
 		fail = ['', 0, "NOOB"]
-		
+
 		if it in fail: # FALSE
 			if has_no_wai: # has NO WAI clause
 				line_number = index_no_wai+1
@@ -547,6 +607,126 @@ def if_then():
 			del tokens[index_no_wai:index_oic] # delete the NO WAI part
 			index_oic -= (index_oic - index_no_wai)
 
+		while line_number < index_oic:
+			if not statement(True):
+				return False
+
+		line_number = index_oic+1
+		return True
+
+	else:
+		output_console("error at: " + get_line(index_oic)) # NO OIC FOUND
+		return False
+
+def switch_case():
+	global line_number, tokens
+
+	# WTF?
+	if get_line(line_number)=="WTF?": 
+		line_number += 1
+	else:
+		output_console("error at: " + get_line(line_number)) # NO O RLY? FOUND
+		return False
+
+	# OIC
+	index_oic = find_end_block("OIC", ["O RLY?", "WTF?"], line_number, len(tokens))
+	has_oic = index_oic > -1 and get_line(index_oic)=="OIC"
+
+	if has_oic:
+		# check if WTF? OIC has contents
+		if index_oic-line_number==0:
+			output_console("error at: " + get_line(line_number))
+			return False
+
+		# OMG
+		index_omg = find_line("OMG", line_number, line_number+1)
+		has_omg = index_omg > -1
+
+		# OMGWTF
+		index_omgwtf = find_keyword("OMGWTF", line_number, index_oic)
+		has_omgwtf = index_omgwtf > -1 and get_line(index_omgwtf)=="OMGWTF"
+
+		# flag
+		matched = False
+		# cases
+		cases = []
+
+		if has_omg: 
+			# find the indices of the cases that are connected to the current block of switch case only
+			cases =[index_omg]
+
+			index_omg += 1
+			while index_omg < index_oic:
+				index_omg = find_keyword("OMG", index_omg, index_oic)
+				if index_omg == -1: # error within nested block
+					output_console("error at: " + get_line(index_oic))
+					return False
+				elif index_omg == -2: # no [more] OMG
+					break
+				cases.append(index_omg)
+				index_omg += 1
+
+			# verify all blocks found inside (even in nested switch cases)
+			is_valid = validate_blocks(cases[0], index_oic)
+
+			if not is_valid[0]:
+				output_console("error at: " + get_line(is_valid[1]))
+				return False
+
+			# check the value of IT
+			it = symbols["IT"]
+			if it=="NOOB":
+				it = "FAIL"
+			
+			# find where it matches
+			for case in cases:
+				token = tokens[case][1]
+				if token=='"':
+					token = tokens[case][2]
+				if token==it:
+					line_number = case+1
+					matched = True
+					break
+
+		else: # if no OMG, there must be OMGWTF
+			if index_omgwtf != line_number and index_oic-index_omgwtf==1:
+				output_console("error at: " + get_line(line_number))
+				return False
+
+		if not matched:
+			if not has_omgwtf: # no match, no default case
+				line_number = index_oic+1
+				return True
+			else:
+				line_number = index_omgwtf+1 
+
+		# GTFO
+		index_gtfo = find_keyword("GTFO", line_number, index_oic)
+		has_gtfo = index_gtfo > -1 and get_line(index_gtfo)=="GTFO"
+
+		end = index_oic
+
+		if has_gtfo:
+			end = index_gtfo
+
+		# remove the OMGWTF statement between matched case until end if there are any
+		if index_omgwtf in range(line_number, end):
+			tokens.pop(index_omgwtf)
+			index_oic -= 1
+
+		# remove OMG statements between matched case until end if there are any
+		count = 0
+		for case in cases:
+			if case in range(line_number, end):
+				tokens.pop(case-count)
+				index_oic -= 1
+				count += 1
+
+		# delete statements that wont run
+		del tokens[end:index_oic]
+		index_oic -= (index_oic - end)
+
+		# run the statements
 		while line_number < index_oic:
 			if not statement(True):
 				return False

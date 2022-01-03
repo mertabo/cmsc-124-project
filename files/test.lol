@@ -1,0 +1,18 @@
+HAI
+WTF?
+	OMG FAIL
+		f
+	OMG 1
+		D
+		GTFO
+	OMG 2
+		WTF?
+		OMG 1
+			DF
+		OIC
+	OMG 3
+		D
+	OMGWTF
+		g
+OIC
+KTHXBYE
