@@ -393,10 +393,14 @@ def check_token(needed_token, index):
 
 # checks if a token is literal (made so that di siya paulit ulit kinocode)
 def is_literal(token):
-	if re.search(r"^(-?[0-9]+)$", token) or re.search(r"^(-?[0-9]+[\.][0-9]*)$", token) or re.search(r"^(WIN|FAIL)$"):
-		return True
+	if re.search(r"^(-?[0-9]+)$", token):
+		return "NUMBR"
+	elif re.search(r"^(-?[0-9]+[\.][0-9]*)$", token):
+		return "NUMBAR"
+	elif re.search(r"^(WIN|FAIL)$", token):
+		return "TROOF"
 
-	return False
+	return None
 
 # checks if a token is an expression
 def is_expr(token):
@@ -406,12 +410,12 @@ def is_expr(token):
 	return False
 
 # checks if a token ends in a delim, and counts how many tokens before we reach the delimiter
-def get_yarn(o_delim, remaining_line):
+def get_yarn(remaining_line):
 	current_yarn = ""
 	total_tokens = 0
 
 	for t in remaining_line:
-		if t == o_delim: # if t is the needed opening delimiter, we return the yarn and total tokens it took
+		if t == "\"": # if t is the needed opening delimiter, we return the yarn and total tokens it took
 			return current_yarn, total_tokens
 
 		current_yarn += t # append t to the current yarn
@@ -428,40 +432,53 @@ def get_yarn(o_delim, remaining_line):
 def expr(token):
 	# ARITHMETIC
 	if token == "SUM OF":
-		return sum_of()
+		print("SUM OF")
+		#return sum_of()
 	elif token == "DIFF OF":
-		return diff_of()
+		print("DIFF OF")
+		#return diff_of()
 	elif token == "PRODUKT OF":
-		return produkt_of()
+		print("PRODUKT OF")
+		#return produkt_of()
 	elif token == "QUOSHUNT OF":
-		return quoshunt_of()
+		print("QUOSHUNT OF")
+		#return quoshunt_of()
 	elif token == "BIGGR OF":
-		return biggr_of()
+		print("BIGGR OF")
+		#return biggr_of()
 	elif token == "SMALLR OF":
-		return smallr_of()
+		print("SMALLR OF")
+		#return smallr_of()
 
 	# BOOLEAN
 	elif token == "BOTH OF":
-		return both_of()
+		print("BOTH OF")
+		#return both_of()
 	elif token == "EITHER OF":
-		return either_of()
+		print("EITHER OF")
+		#return either_of()
 	elif token == "WON OF":
-		return won_of()
+		print("WON OF")
+		#return won_of()
 	elif token == "NOT":
-		return is_not()
+		print("NOT")
+		#return is_not()
 
 	# ALL OF AND ANY OF
 	elif token ==  "ALL OF":
-		return all_of()
+		print("ALL OF")
+		#return all_of()
 	elif token == "ANY OF":
-		return any_of()
+		print("ANY OF")
+		#return any_of()
 
 	# COMPARISON
 	elif token == "BOTH SAEM":
-		return both_saem()
+		print("BOTH SAEM")
+		#return both_saem()
 	elif token == "DIFFRINT":
-		return diffrint()
-
+		print("DIFFRINT")
+		#return diffrint()
 
 def statement(is_code_block):
 	# THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
@@ -470,7 +487,6 @@ def statement(is_code_block):
 
 	# VARIABLE DECLARATION
 	if token=="I HAS A" and not is_code_block:
-		print("I HAS A")
 		return i_has_a(1)
 
 	# ARITHMETIC OPERATIONS
@@ -520,7 +536,7 @@ def statement(is_code_block):
 	# INPUT/OUTPUT
 	elif token=="VISIBLE":
 		# move into the 2nd token since we r sure na tama yung visible
-		return visible(1)
+		return visible(1, "")
 	elif token=="GIMMEH":
 		return gimmeh(1)
 
@@ -549,6 +565,7 @@ def statement(is_code_block):
 		
 		if re.search(regex, token): # [RE]ASSIGNMENTS
 			print("IDENTIFIER")
+			return assignment(0)
 		else: # UNKNOWN PATTERN
 			output_console("error at: " + get_line(line_number))
 			return False
@@ -573,57 +590,60 @@ def find_end_block(needed_token, incrementor, start, end):
 			return i
 	return -1
 
-def visible(index):
+def visible(index, to_print):
+	global line_number
+
 	# read the print arguments
 	# need to determine if variable identifier, expr, literal, another argument + identifier, another argument + expr, another arg + literal
 	token = get_current_token(index)
 
+	if not token: # if EOL / this is the base case
+
+		output_console(to_print + "\n") # print to console the entire created string.
+		line_number += 1 # update line number and return true
+		return True
+
+	# check if identifier, expr, or literal
 	if token in symbols or is_literal(token):
 		# if the token is a variable, numbr, numbar, or troof
 
 		# output the variable value in console.
-		output_console(str(token))
+		return visible(index + 1, to_print + str(symbols[token]))
 
 	# EXPR
 	elif is_expr(token):
 		expr(token)
 		# MORE STUFF HERE, 
 
-		output_console("put result of expression here; depends pa sa gagawin ni ysa")
+		return visible(index + 1, to_print + str(symbols["IT"]))
 
 	# YARN
-	elif token == "\"" or token == "\'":
+	elif token == "\"":
 
 		# issue: are escape characters used? this will be edited according to how the strings and esc characters are used; either simplified
-
-		yarn_literal, total_tokens = get_yarn(token, tokens[line_number][index:]) # pass a spliced version starting from the yarn to the closing one
+		yarn_literal, total_tokens = get_yarn(tokens[line_number][index+1:]) # pass a spliced version starting from the yarn to the closing one
 
 		if not yarn_literal:
 			return False
 
-		output_console(yarn_literal) # output the literal
-		index += total_tokens # catch the closing delimiter by adding the total tokens it took
+		index += total_tokens + 1 # catch the closing delimiter by adding the total tokens it took + 1
+
+		return visible(index + 1, to_print + yarn_literal)
 
 	# not in variables or anything else
 	else:
 		output_console("error at: " + get_line(line_number) + " (" + token + " is not valid or recognized" + ")")
 		return False
 
-	# move on to the next index
-	index += 1
-
-	# recursive part
-	if get_current_token(index): # if current token is not None, meaning not EOL
-		return visible(index) # check the next tokens until EOL
-
-	# if it is None, we return True meaning it ran without problems
-	return True
-
+# GIMMEH IS INCLOMPLETE
 def gimmeh(index):
-	global symbols
+	global symbols, line_number
 
-	# check if the index after the current is greater than the length of the line
-	if index + 1 >= len(tokens[line_number]):
+	print(index + 1 <= len(tokens[line_number]))
+	print(tokens[line_number])
+
+	# check if the index after the current is less than the length of the line, meaning theres more than one token in the line
+	if index + 1 < len(tokens[line_number]):
 
 		output_console("error at: " + get_line(line_number) + " (GIMMEH only requires one variable)")
 		return False
@@ -633,26 +653,23 @@ def gimmeh(index):
 		token = get_current_token(index)
 
 		if token in symbols:
-			# take input and store it 
-			user_input = input()
-			# ilagay sa symbols yung user input with that key
-			symbols[token] = user_input
+
+			pass
 
 		else:
 			# if wala yung token sa declared variables dict
 			output_console("error at: " + get_line(line_number) + " (" + token + " is an undeclared variable.")
 			return False
 
-	return True
-
 def i_has_a(index):
-	global symbols
+	global symbols, line_number
 
+	# get the token at index (in this case, probably index 1)
 	l_value = get_current_token(index)
 
 	# check if the varident is a valid identifier
 	if re.search(r"^[a-zA-Z][a-zA-Z0-9_]*$", l_value):
-		index = check_token("ITZ", index+1) # check the token after the next, and if valid, we move on to the next next.
+		index = check_token("ITZ", index+1) # check the next token ITZ (in index 2), and if valid, we move on to the token that follows it
 
 		if index == -1: # means na mali yung itz
 			return False
@@ -663,7 +680,7 @@ def i_has_a(index):
 				return False
 
 			# do this if wala pa yung l_value sa symbols
-			symbols[l_value] = None # create an empty new variable
+			symbols[l_value] = "NOOB" # create an empty new variable, type NOOB
 
 		else: # if there is an itz so we move on to the next index
 
@@ -679,17 +696,26 @@ def i_has_a(index):
 
 				expr(r_value) # evaluate the expression, r_value is the specific expression to use (so sum of, diff of, etc)
 
+				symbols[l_value] = symbols["IT"]
+
 			elif r_value in symbols:
 
 				# we give the value of r_value to l_value
 				symbols[l_value] = symbols[r_value]
 
-			elif is_literal(r_value):
+			elif is_literal(r_value) == "NUMBR":
 
-				# assign the literal to the l_calue
+				symbols[l_value] = int(r_value)
+
+			elif is_literal(r_value) == "NUMBAR":
+
+				symbols[l_value] = float(r_value)
+
+			elif is_literal(r_value) == "TROOF":
+
 				symbols[l_value] = r_value
 
-			elif r_value == "\"" or r_value = "\'":
+			elif r_value == "\"":
 
 				yarn_literal, total_tokens = get_yarn(r_value, tokens[line_number][index:])
 
@@ -697,10 +723,11 @@ def i_has_a(index):
 					return False
 
 				symbols[l_value] = yarn_literal
-				index += total_tokens
+				index += total_tokens # update by the total tokens that is included in the yarn (this should just be 1 but im keeping this just in case hahahahah)
 
 			else: # if di valid yung next
-				output_console("error at: " + get_line(line_number) + " (Is neither an expression, a symbol, or a literal)")
+				output_console("error at: " + get_line(line_number) + " (Is neither an expression, a variable, or a literal)")
+				return False
 
 			# check if may newline
 			next_token = get_current_token(index + 1)
@@ -714,8 +741,81 @@ def i_has_a(index):
 		output_console("error at: " + get_line(line_number) + " (Invalid syntax)")
 		return False
 
+	#update line number
+	line_number += 1
+
 	return True
 
+def assignment(index):
+	global symbols, line_number
+
+	# check if l_side is a valid or existing varible
+	lhs = get_current_token(index)
+
+	if lhs in symbols:
+		# check if the next token is R
+		index = check_token("R", index + 1)
+
+		# different things will be done depending on if the rhs is literal, variable, and expression
+		if index == -1: # if wrong syntax, error message is @ check_token already
+
+			return False
+		
+		elif index == 0: # if EOL kaagad and walang rhs
+
+			output_console("error at: " + get_line(line_number) + " (Unexpected EOL)")
+
+		else: # if may rhs
+			
+			rhs = get_current_token(index)
+
+			# typecast??? here
+
+			# different things happen depending on if expr, literal, variable, or yarn
+			if rhs in symbols:
+
+				symbols[lhs] = symbols[rhs]
+
+			elif is_expr(rhs):
+				expr(rhs)
+
+				symbols[lhs] = symbols["IT"] # since stinostore sa it yung expr?
+
+			elif is_literal(rhs) == "NUMBR":
+
+				symbols[lhs] = int(rhs)
+
+			elif is_literal(rhs) == "NUMBAR":
+
+				symbols[lhs] = float(rhs)
+
+			elif is_literal(rhs) == "TROOF":
+
+				symbols[lhs] = rhs
+
+			elif rhs == "\"":
+				yarn_literal, total_tokens = get_yarn(r_value, tokens[line_number][index:])
+
+				if not yarn_literal:
+					return False
+
+				symbols[lhs] = yarn_literal
+				index += total_tokens # update by the total tokens that is included in the yarn (this should just be 1 but im keeping this just in case hahahahah)
+
+			else: # nde valid yung rhs
+				output_console("error at: " + get_line(line_number) + " (Is neither expression, symbol, or literal.")
+				return False
+
+			# check if may next token
+			next_token = get_current_token(index + 1)
+
+			if next_token: # meaning hindi none, meaning hindi eol
+				output_console("error at: " + get_line(line_number) + " (Expected EOL, got " + next_token + ")")
+				return False
+
+	# update line number and return true
+	line_number += 1
+	return True
 
 def if_then():
 	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
