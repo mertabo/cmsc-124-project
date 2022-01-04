@@ -16,7 +16,9 @@ import re
 tokens = []
 line_number = 0
 symbols = {"IT": "NOOB"}
-is_break = False # for loops
+# for loops
+is_break = False 
+in_loop = []
 
 ##### FUNCTIONS #####
 def select_file():
@@ -82,7 +84,7 @@ def remove_whitespaces(src_code):
 
 def findMatch(line):
 	#Literal(0-4)
-	yarn = r"(\")(.*?)(\")"
+	yarn = r"(\")([^\"]*)(\")"
 	numbr = r"-?[0-9]+"
 	numbar = r"-?[0-9]+[\.][0-9]*"
 	troof = r"(WIN|FAIL)"
@@ -459,18 +461,18 @@ def statement(is_code_block):
 	# SWITCH CASE
 	elif token=="WTF?":
 		return switch_case()
-		# print("WTF?")
 
 	# LOOP
 	elif token=="IM IN YR":
-		print("IM IN YR")
+		return loop()
+		# print("IM IN YR")
 
 	#### FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
 	#### FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
 	#### FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
 	
 	# MISUSED KEYWORDS
-	elif token=="GTFO" and is_code_block:
+	elif token=="GTFO" and is_code_block and in_loop:
 		global is_break
 		is_break = True
 		line_number += 1
@@ -526,29 +528,59 @@ def find_keyword(needed_token, start, end):
 		start += 1
 	return -2 # no keyword found
 
-def validate_blocks(start, end): # checks if blocks are empty
+def is_expr(token_list):
+	# call expression
+	return True
+
+def validate_blocks(start, end): # checks if blocks are valid and non-empty
 	#IM IN YR
 	#YA RLY, NO WAI, OMG, OMGWTF, GTFO, OIC, IM OUTTA YR
 	invalid = ["YA RLY", "NO WAI", "OMG", "OMGWTF", "OIC", "IM OUTTA YR"]
 
 	for i in range(start, end):
 		next_statement = tokens[i+1][0]
-		token = tokens[i][0]
-		if token=="OMG":
+		line = tokens[i]
+		token = line[0]
+		if token=="OMG": # check if valid OMG
+			length = len(line)
+			if length == 2:
+				literal = line[1]
+				if literal.replace('.','',1).replace('-','',1).isdigit() or literal in ["WIN", "FAIL"]: 
+					pass
+			elif length == 4:
+				if line[1]=='"':
+					pass
+			else:
+				return [False, i]
 			if next_statement in invalid:
 				return [False, i+1]
-			if len(tokens[i]) > 1:
-				literal = tokens[i][1]
-				if literal.isdigit() or literal.replace('.', '', 1).isdigit() or literal=='"' or literal in ["WIN", "FAIL"]: 
-					continue
-			return [False, i]
-		elif token=="IM IN YR": 
-			# check loop
+		elif token=="IM IN YR": # check if valid loop
+			if len(line) > 7:
+				regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
+				if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (not is_expr(line[6:])): 
+					return [False, i]
+			else:
+				return [False, i]
 			if next_statement in invalid:
 				return [False, i+1]
-		elif token=="OIC" or token=="IM OUTTA YR":
-			continue
+		elif token=="IM OUTTA YR":
+			if len(line) != 2:
+				output_console("error at: " + get_line(i))
+				return False
+
+			# label
+			label_regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
+			try:
+				label_regex.search(line[1]).group()
+			except:
+				output_console("error at: " + get_line(i))
+				return False
+		elif token=="OIC":
+			if get_line(i) != token:
+				return [False, i]
 		elif token in invalid:
+			if get_line(i) != token:
+				return [False, i]
 			if next_statement in invalid:
 				return [False, i+1]
 
@@ -565,16 +597,17 @@ def if_then():
 	if get_line(line_number)=="O RLY?": 
 		line_number += 1
 	else:
-		output_console("error at: " + get_line(line_number)) # NO O RLY? FOUND
+		output_console("error::expected O RLY? at: " + get_line(line_number)) # NO O RLY? FOUND
 		return False
 
 	# YA RLY
 	index_ya_rly = find_line("YA RLY", line_number, line_number+1)
+	has_ya_rly = index_ya_rly > -1 
 
-	if index_ya_rly > -1 and get_line(index_ya_rly)=="YA RLY":
+	if has_ya_rly:
 		line_number += 1
 	else:
-		output_console("error at: " + get_line(line_number)) # NO YA RLY FOUND
+		output_console("error::expected YA RLY at: " + get_line(line_number)) # NO YA RLY FOUND
 		return False
 
 	# OIC
@@ -615,7 +648,7 @@ def if_then():
 		return True
 
 	else:
-		output_console("error at: " + get_line(index_oic)) # NO OIC FOUND
+		output_console("error::expected OIC") # NO OIC FOUND
 		return False
 
 def switch_case():
@@ -690,7 +723,7 @@ def switch_case():
 
 		else: # if no OMG, there must be OMGWTF
 			if index_omgwtf != line_number and index_oic-index_omgwtf==1:
-				output_console("error at: " + get_line(line_number))
+				output_console("error::expected OMG or OMGWTF at: " + get_line(line_number))
 				return False
 
 		if not matched:
@@ -712,6 +745,7 @@ def switch_case():
 		# remove the OMGWTF statement between matched case until end if there are any
 		if index_omgwtf in range(line_number, end):
 			tokens.pop(index_omgwtf)
+			end -= 1
 			index_oic -= 1
 
 		# remove OMG statements between matched case until end if there are any
@@ -719,6 +753,7 @@ def switch_case():
 		for case in cases:
 			if case in range(line_number, end):
 				tokens.pop(case-count)
+				end -= 1
 				index_oic -= 1
 				count += 1
 
@@ -735,8 +770,167 @@ def switch_case():
 		return True
 
 	else:
-		output_console("error at: " + get_line(index_oic)) # NO OIC FOUND
+		output_console("error::expected OIC") # NO OIC FOUND
 		return False
+
+def cast(variable, needed_type):
+	# NOOB, "", 0 -> FAIL
+	# OTHERS -> WIN
+	# WIN -> NUMBR, NUMBAR (1[.0])
+	# FAIL -> NUMBR, NUMBAR (0[.0])
+	# NUMBR <-> NUMBAR
+	# NUMBR, NUMBAR(2 DECIMAL) <-> YARN
+
+	if needed_type=="TROOF":
+		if variable in ["WIN", "FAIL"]:
+			return variable
+		elif variable in ["NOOB", '', 0]:
+			return "FAIL"
+		else:
+			return "WIN"
+	
+	elif needed_type=="YARN":
+		if type(variable)==str:
+			return variable
+		elif type(variable)==int or type(variable)==float:
+			return str(variable)
+	
+	elif needed_type=="NUMBR":
+		if type(variable)==int:
+			return variable
+		elif type(variable)==float:
+			return int(variable)
+		elif variable=="WIN":
+			return 1
+		elif variable=="FAIL":
+			return 0
+		elif variable.replace('.','',1).replace('-','',1).isdigit():
+			return int(eval(variable))
+
+	elif needed_type=="NUMBAR":
+		if type(variable)==float:
+			return variable
+		elif type(variable)==int:
+			return float(variable)
+		elif variable=="WIN":
+			return 1.0
+		elif variable=="FAIL":
+			return 0.0
+		elif variable.replace('.','',1).replace('-','',1).isdigit():
+			return float(eval(variable))
+
+	return False
+
+
+def loop():
+	global tokens, line_number, is_break, in_loop
+	in_loop.append(True)
+
+	# IM IN YR
+	index_im_in_yr = line_number
+	if len(tokens[index_im_in_yr]) < 7:
+		output_console("error::expected IM IN YR <label> <operation> YR <variable> [TIL|WILE <expression>] at: " + get_line(index_im_in_yr))
+		return False
+
+	line = tokens[index_im_in_yr]
+	label = line[1]
+	operation = line[2]
+	variable = ''
+	clause = line[5]
+	expression = is_expr(line[6:])
+	im_in_yr = get_line(index_im_in_yr)
+
+	# label
+	label_regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
+	try:
+		label_regex.search(line[1]).group()
+	except:
+		output_console("error::invalid label at: " + im_in_yr)
+		return False
+
+	# operation
+	if operation not in ["UPPIN", "NERFIN"]:
+		output_console("error::expected UPPIN or NERFIN at: " + im_in_yr)
+		return False
+
+	# YR
+	if line[3]!="YR":
+		output_console("error::expected YR at: " + im_in_yr)
+		return False		
+
+	# variable
+	if variable not in symbols.keys():
+		output_console("error::undeclared variable " + variable + " at: " + im_in_yr)
+		return False
+	elif cast(variable, "NUMBR")==False:
+		output_console("error::variable " + variable + " cannot be casted to numerical value at: " + im_in_yr)
+		return False
+
+	# TIL/WILE
+	if clause not in ["TIL", "WILE"]:
+		output_console("error::expected TIL or WILE at: " + im_in_yr)
+		return False
+
+	# expr
+	if not expression:
+		output_console("error::expected expression at: " + im_in_yr)
+		return False
+
+	# IM OUTTA YR
+	index_im_outta_yr = line_number
+	has_im_outta_yr = False
+
+	while index_im_outta_yr < len(tokens):
+		index_im_outta_yr = find_line(index_im_outta_yr, len(tokens))
+		if index_im_outta_yr == -1:
+			break
+		if tokens[index_im_outta_yr][1] == label:
+			has_im_outta_yr = True
+			break
+		index_im_outta_yr += 1
+
+	if has_im_outta_yr:
+		# verify nested blocks
+		is_valid = validate_blocks(index_im_in_yr, index_im_outta_yr)
+
+		if not is_valid[0]:
+			output_console("error at: " + get_line(is_valid[1]))
+			return False 
+
+		# result of expression in IT
+		it = symbols["IT"]
+		it = cast(it, "TROOF")
+		should_run = False
+
+		if clause=="TIL":
+			should_run = True if it=="FAIL" else False
+		else:
+			should_run = True if it=="WIN" else False
+
+		# loop the statements while expression is valid or no GTFO
+		while should_run and not is_break:
+			while line_number < index_im_outta_yr:
+				if not statement(True):
+					return False
+			is_expr(line[6:])
+			it = symbols["IT"]
+			it = cast(it, "TROOF")
+			should_run = False
+
+			if clause=="TIL":
+				should_run = True if it=="FAIL" else False
+			else:
+				should_run = True if it=="WIN" else False
+
+		is_break = False
+		in_loop.pop(-1)
+		line_number = index_im_outta_yr+1
+		return True
+
+	else:
+		output_console("error::expected IM OUTTA YR " + label) # NO IM OUTTA YR FOUND
+		return False
+
 
 
 ##### GUI #####
