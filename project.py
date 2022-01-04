@@ -8,7 +8,8 @@ import re
 tokens = []
 line_number = 0
 symbols = {"IT": "NOOB"}
-next_num = 0 # for operations
+# for operations
+expression = []
 # for loops
 is_break = False 
 in_loop = []
@@ -37,10 +38,11 @@ def show_file_contents(contents):
 
 def run():
 	# reset variables
-	global tokens, line_number, symbols, is_break, in_loop
+	global tokens, line_number, symbols, expression, is_break, in_loop
 	tokens = []
 	line_number = 0
 	symbols = {"IT": "NOOB"}
+	expression = []
 	is_break = False 
 	in_loop = []
 	console["state"] = "normal"
@@ -414,43 +416,43 @@ def statement(is_code_block):
 		result = (sum_of(tokens[line_number]))
 		line_number += 1
 		if result: #if syntactically correct, solve
-				get_value(expression)
+			get_value(expression)
 		return result
 	elif token=="DIFF OF":
 		result = diff_of(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				get_value(expression)
+			get_value(expression)
 		return result
 	elif token=="PRODUKT OF":
 		result = prod_of(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				get_value(expression)
+			get_value(expression)
 		return result
 	elif token=="QUOSHUNT OF":
 		result = quo_of(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				get_value(expression)
+			get_value(expression)
 		return result
 	elif token=="MOD OF":
 		result = mod_of(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				get_value(expression)
+			get_value(expression)
 		return result
 	elif token=="BIGGR OF":
 		result = biggr_of(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				get_value(expression)
+			get_value(expression)
 		return result
 	elif token=="SMALLR OF":
 		result = smallr_of(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				get_value(expression)
+			get_value(expression)
 		return result
 
 	# BOOLEAN OPERATIONS
@@ -458,37 +460,37 @@ def statement(is_code_block):
 		result = bool_op(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				eval_troof(expression)
+			eval_troof(expression)
 		return result
 	elif token=="EITHER OF":
 		result = bool_op(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				eval_troof(expression)
+			eval_troof(expression)
 		return result
 	elif token=="WON OF":
 		result = bool_op(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				eval_troof(expression)
+			eval_troof(expression)
 		return result
 	elif token=="NOT":
 		result = bool_op(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				eval_troof(expression)
+			eval_troof(expression)
 		return result
 	elif token=="ALL OF":
 		result = bool_op(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				eval_troof(expression)
+			eval_troof(expression)
 		return result
 	elif token=="ANY OF":
 		result = bool_op(tokens[line_number])
 		line_number += 1
 		if result: #if syntactically correct, solve
-				eval_troof(expression)
+			eval_troof(expression)
 		return result
 
 	# COMPARISON OPERATIONS
@@ -682,19 +684,19 @@ def get_value(listOp):
 	final_expr = "("
 	for index, element in enumerate(listOp):
 		if element == "max":
-			final_expr = "max" + final_expr +"," + listOp[index+1]+")"
+			final_expr = "max" + final_expr +"," + str(listOp[index+1]) +")"
 			del listOp[index+1]
 		elif element == "min":
-			final_expr = "min" + final_expr +"," + listOp[index+1]+")"
+			final_expr = "min" + final_expr +"," + str(listOp[index+1]) +")"
 			del listOp[index+1]
 		elif index in range(0,3):
-			final_expr = final_expr + element
+			final_expr = final_expr + str(element)
 		elif index == 3:
-			final_expr = final_expr + ")" + element
+			final_expr = final_expr + ")" + str(element)
 		elif (index % 2) == 0:
-			final_expr = "(" + final_expr + element + ")"
+			final_expr = "(" + final_expr + str(element) + ")"
 		else:
-			final_expr = final_expr + element
+			final_expr = final_expr + str(element)
 	if (len(listOp)) == 3:
 		final_expr = final_expr + ")"
 	   
@@ -704,13 +706,13 @@ def get_value(listOp):
 def check_digit(token):
 	global expr 
 	is_valid = False
-	if (bool(re.match(regExDigit[0], token))): #check if numbr:
+	if type(token)==int: #check if numbr:
 		expr = token
 		is_valid = True
-	elif (bool(re.match(regExDigit[1], token))): #check if numbar:
+	elif type(token)==float: #check if numbar:
 		expr = token
 		is_valid = True
-	elif (bool(re.match(r"[a-zA-Z][a-zA-Z0-9_]*", token))): #if identifier check if value is numbr/numbar
+	elif is_valid_identifier(token): #if identifier check if value is numbr/numbar
 		if token in symbols.keys():
 			if symbols[token].isnumeric():
 				expr = symbols[token]
@@ -772,7 +774,7 @@ def check_nested(line):
 
 def sum_of(line):
 	global expression, expr
-	
+
 	if check_digit(line[-1]):
 		del line[-1]
 		expression.append(expr)
