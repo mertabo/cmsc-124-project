@@ -233,7 +233,10 @@ def findMatch(line):
 					classify.append("String Delimiter")
 					classify.append("Literal")
 					classify.append("String Delimiter")
-				elif index in range(1,5):
+				elif index in range(1,3):
+					allTokens[-1] = eval(unspacedtoken)
+					classify.append("Literal")					
+				elif index in range(3,5):
 					classify.append("Literal")
 				# elif index == 5: // check if this is still necessary before deleting
 				# 	classify.append("String Delimiter")
@@ -327,7 +330,7 @@ def get_line(index):
 		return "KTHXBYE"
 
 	for word in tokens[index]: # get the whole line as string at line index
-		string += word + ' '
+		string += str(word) + ' '
 
 	return string.strip() 
 
@@ -496,7 +499,7 @@ def statement(is_code_block):
 		regex = r"[a-zA-Z][a-zA-Z0-9_]*$"
 		
 		if re.search(regex, token): # [RE]ASSIGNMENTS
-			print("IDENTIFIER")
+			return assignment()
 		else: # UNKNOWN PATTERN
 			output_console("error at: " + get_line(line_number))
 			return False
@@ -507,8 +510,83 @@ def statement(is_code_block):
 def is_numeric(token):
 	return token.replace('.','',1).replace('-','',1).isdigit()
 
-def loop_expr(token_list):
+def is_literal(token):
+	# NUMBR, NUMBAR, YARN, TROOF
+	if token=='"':
+		return "YARN"
+	elif type(token)==int:
+		return "NUMBR"
+	elif type(token)==float:
+		return "NUMBAR"
+	elif token in ["WIN", "FAIL"]:
+		return "TROOF"
+	elif token=="NOOB":
+		return token
+
+	return False
+
+def eval_expr(token_list):
 	# call expression
+	return True
+
+def assignment():
+	global line_number
+
+	line = tokens[line_number]
+	length = len(line)
+
+	# check if line has valid length
+	if length < 3:
+		output_console("error::unexpected EOL at: " + get_line(line_number))
+		return False
+
+	# check if lhs is an existing variable
+	lhs = line[0]
+	
+	if lhs not in symbols.keys():
+		output_console("error::undeclared variable at: " + get_line(line_number))
+		return False
+
+	# check if the next token is R or IS NOW A
+	if line[1]=="IS NOW A":
+		if length != 3:
+			output_console("error at: " + get_line(line_number))
+			return False
+		line[1] = "R"
+		line.insert(2, "MAEK")
+		length = len(line)
+	elif line[1]!="R":
+		output_console("error::expected R or IS NOW A at: " + get_line(line_number))
+		return False
+
+	# check if rhs is literal, variable, typecast, or expr
+	rhs = line[2]
+	value = ''
+	eol = False
+
+	if is_literal(rhs):
+		symbols[lhs] = rhs
+		eol = True if length==3 else False
+	elif rhs in symbols.keys():
+		symbols[lhs] = symbols[rhs]
+		eol = True if length==3 else False
+	elif rhs=="MAEK":
+		if typecast(line[2:], lhs):
+			eol = True
+	elif eval_expr(line[2:]):
+		symbols[lhs] = symbols["IT"]
+		eol = True
+	else:
+		output_console("error::in the literal, variable, or expression at: " + get_line(line_number))
+		return False
+
+	# check if no unexpected tokens in the end
+	if not eol:
+		output_console("error::expected EOL at: " + get_line(line_number))
+		return False
+
+	# update line number and return true
+	line_number += 1
 	return True
 
 def cast(variable, needed_type):
@@ -563,7 +641,7 @@ def cast(variable, needed_type):
 
 def typecast(token_list, dest):
 	valid_types = ['TROOF', 'YARN', 'NUMBR', 'NUMBAR', 'NOOB']
-	type_result = line[-1]
+	type_result = token_list[-1]
 
 	# check if type is valid
 	if type_result not in valid_types:
@@ -571,20 +649,31 @@ def typecast(token_list, dest):
 		return False
 
 	# check if has A
-	has_a = "A" in line
+	has_a = "A" in token_list
 	expr_end = -2 if has_a else -1
-	expr_result = loop_expr(token_list[1:expr_end])
-	value = ''
+	expr_result = eval_expr(token_list[1:expr_end])
+	value = token_list[1]
 
 	if expr_result: # expression
 		value = 'IT' 
-	elif src in symbols.keys(): # variable
-		value = line[1]
-	else:
+	elif len(token_list[1:expr_end])!=1 or value not in symbols.keys(): # variable
 		output_console("error::in expression or variable at: " + get_line(line_number))
 		return False
-	
+
 	value = symbols[value]
+
+	# special case for explicit casting
+	if value=="NOOB":
+		if type_result=="NUMBR":
+			symbols[dest] = 0 # store the result to dest
+			return True
+		elif type_result=="NUMBAR":
+			symbols[dest] = 0.0 # store the result to dest
+			return True
+		elif type_result=="YARN":
+			symbols[dest] = '' # store the result to dest
+			return True
+	
 	result = cast(value, type_result) # typecast
 
 	if result==False: # typecast failed
@@ -593,6 +682,9 @@ def typecast(token_list, dest):
 
 	symbols[dest] = result # store the result to dest
 	return True
+
+
+###CODE BLOCKS###
 
 def find_end_block(needed_token, incrementor, start, end):
 	max_length = len(tokens)
@@ -639,21 +731,19 @@ def validate_blocks(start, end): # checks if blocks are valid and non-empty
 		token = line[0]
 		if token=="OMG": # check if valid OMG
 			length = len(line)
-			if length == 2:
-				literal = line[1]
-				if is_numeric(literal) or literal in ["WIN", "FAIL"]: 
-					pass
-			elif length == 4:
-				if line[1]=='"':
-					pass
-			else:
+			literal = is_literal(line[1])
+			if literal==False:
+				return [False, i]
+			elif literal=="YARN" and length!=4:
+				return [False, i]
+			elif literal in ["NUMBR", "NUMBAR", "TROOF"] and length!=2:
 				return [False, i]
 			if next_statement in invalid:
 				return [False, i+1]
 		elif token=="IM IN YR": # check if valid loop
 			if len(line) > 7:
 				regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
-				if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (not loop_expr(line[6:])): 
+				if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (eval_expr(line[6:])==False): 
 					return [False, i]
 			else:
 				return [False, i]
@@ -812,8 +902,6 @@ def switch_case():
 				token = tokens[case][1]
 				if token=='"': # string
 					token = tokens[case][2]
-				elif is_numeric(token): # numbr/numbar
-					token = eval(token)
 				if token==it:
 					line_number = case+1
 					matched = True
@@ -886,7 +974,7 @@ def loop():
 	operation = line[2]
 	variable = line[4]
 	clause = line[5]
-	expression = loop_expr(line[6:])
+	expression = eval_expr(line[6:])
 	im_in_yr = get_line(index_im_in_yr)
 
 	# label
@@ -965,7 +1053,7 @@ def loop():
 				if not statement(True):
 					return False
 			symbols[variable] += increment
-			loop_expr(line[6:])
+			eval_expr(line[6:])
 			it = symbols["IT"]
 			it = cast(it, "TROOF")
 			should_run = False
