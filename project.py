@@ -307,8 +307,8 @@ def fill_table(tree, lhs, rhs):
 
 	for i in range(len(lhs)): # per line
 		for j in range(len(lhs[i])): # per token
-			lhs_value = lhs[i][j]
-			rhs_value = rhs[i][j]
+			lhs_value = str(lhs[i][j])
+			rhs_value = str(rhs[i][j])
 
 			tree.insert(parent='', index=END, text=count, values=(lhs_value, rhs_value)) # print to GUI
 			count += 1
@@ -371,6 +371,7 @@ def syntax_analyzer():
 				while line_number < len(tokens): # check the rest of the code
 					if not statement(False):
 						break 
+				fill_table(symbtable_table, [list(symbols.keys())], [list(symbols.values())])
 		else:
 			output_console("error at: " + get_line(i)) # program has no KTHXBYE
 	else: # program does not start with HAI
@@ -413,7 +414,7 @@ def statement(is_code_block):
 
 	# VARIABLE DECLARATION
 	if token=="I HAS A" and not is_code_block:
-		print("I HAS A")
+		return i_has_a()
 
 	# ARITHMETIC OPERATIONS
 	elif token=="SUM OF":
@@ -525,9 +526,60 @@ def is_literal(token):
 
 	return False
 
+def is_valid_identifier(token):
+	# no keywords must be used as identifiers
+	regex = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*$")
+	keywords = ["WIN", "FAIL", "NUMBR", "NUMBAR", "YARN", "TROOF", "NOOB", "HAI", "KTHXBYE", "I HAS A", "ITZ", "VISIBLE", "GIMMEH", "R", "YA RLY", "NO WAI", "O RLY?", "OMG", "OMGWTF", "OIC", "WTF?", "UPPIN", "NERFIN", "TIL", "WILE", "IM OUTTA YR", "YR", "IM IN YR", "MEBBE", "SMOOSH", "MKAY", "AN", "A", "BOTH SAEM", "DIFFRINT", "BOTH OF", "EITHER OF", "WON OF", "NOT", "ANY OF", "ALL OF", "SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BTW", "OBTW", "TLDR", "MAEK", "IS NOW A", "FOUND YR", "GTFO","I IZ","HOW IZ I" ,"IF U SAY SO"]
+
+	if not regex.search(token) or token in keywords:
+		return False
+
+	return True
+
 def eval_expr(token_list):
 	# call expression
 	return True
+
+def i_has_a():
+	global line_number
+	line = tokens[line_number]
+	length = len(line)
+
+	if length < 2:
+		output_console("error::unexpected EOL at: " + get_line(line_number))
+		return False
+
+	# get the variable
+	l_value = line[1]
+
+	if not is_valid_identifier(l_value):
+		output_console("error::invalid variable at: " + get_line(line_number))
+		return False
+
+	if l_value in symbols.keys():
+		output_console("error::redeclaration at: " + get_line(line_number))
+		return False		
+
+	if length==2: # uninitialized
+		symbols[l_value] = "NOOB"
+	elif length >= 4 and line[2]=="ITZ": # initialized
+		r_value = line[3]
+		if is_literal(r_value): # literal
+			symbols[l_value] = r_value
+		elif r_value in symbols.keys():
+			symbols[l_value] = symbols[r_value]
+		elif eval_expr(line[3:]):
+			symbols[l_value] = symbols["IT"]
+		else:
+			output_console("error::in the literal, variable, or expression at: " + get_line(line_number))
+			return False
+	else:
+		output_console("error at: " + get_line(line_number))
+		return False
+
+	line_number += 1
+	return True
+
 
 def assignment():
 	global line_number
@@ -564,25 +616,17 @@ def assignment():
 	value = ''
 	eol = False
 
-	if is_literal(rhs):
+	if is_literal(rhs) and length==3:
 		symbols[lhs] = rhs
-		eol = True if length==3 else False
-	elif rhs in symbols.keys():
+	elif rhs in symbols.keys() and length==3:
 		symbols[lhs] = symbols[rhs]
-		eol = True if length==3 else False
 	elif rhs=="MAEK":
-		if typecast(line[2:], lhs):
-			eol = True
+		if not typecast(line[2:], lhs):
+			return False
 	elif eval_expr(line[2:]):
 		symbols[lhs] = symbols["IT"]
-		eol = True
 	else:
-		output_console("error::in the literal, variable, or expression at: " + get_line(line_number))
-		return False
-
-	# check if no unexpected tokens in the end
-	if not eol:
-		output_console("error::expected EOL at: " + get_line(line_number))
+		output_console("error at: " + get_line(line_number))
 		return False
 
 	# update line number and return true
@@ -978,10 +1022,7 @@ def loop():
 	im_in_yr = get_line(index_im_in_yr)
 
 	# label
-	label_regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
-	try:
-		label_regex.search(line[1]).group()
-	except:
+	if not is_valid_identifier(label):
 		output_console("error::invalid label at: " + im_in_yr)
 		return False
 
