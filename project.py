@@ -37,6 +37,7 @@ def show_file_contents(contents):
         text_editor.insert(1.0, contents) # print contents to GUI
 
 def run():
+
         # reset variables
         global tokens, line_number, symbols, expression, is_break, in_loop
         tokens = []
@@ -84,6 +85,7 @@ def remove_whitespaces(src_code):
         return temp
 
 def findMatch(line):
+
         #Literal(0-4)
         yarn = r"(\")([^\"]*)(\")"
         numbr = r"-?[0-9]+"
@@ -300,6 +302,7 @@ def fill_table(tree, lhs, rhs):
 
         count = 0
 
+
         for i in range(len(lhs)): # per line
                 for j in range(len(lhs[i])): # per token
                         lhs_value = str(lhs[i][j])
@@ -324,8 +327,10 @@ def get_line(index):
         if index >= len(tokens): # out of bounds
                 return "KTHXBYE"
 
+
         for word in tokens[index]: # get the whole line as string at line index
                 string += str(word) + ' '
+
 
         return string.strip() 
 
@@ -348,6 +353,7 @@ def remove_comment_delims():
         return new_tokens
 
 def output_console(contents):
+
         console["state"] = "normal"
         console.insert(END, contents) # print contents to GUI
         console.insert(END, "\n") # print contents to GUI
@@ -403,6 +409,7 @@ def check_token(needed_token, index):
                 return -1 # wrong syntax
 
 def statement(is_code_block):
+
         # THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
         global line_number
         token = get_current_token(0)
@@ -720,6 +727,7 @@ def eval_expr(token_list):
 
 #FUNCTIONS FOR ARITHMETIC OPERATIONS
 def get_value(listOp):
+
         global symbols, expression 
         listOp = listOp[::-1]
            
@@ -1304,6 +1312,7 @@ def diffrint(line):
                 output_console("error at: " + get_line(line_number))
                 return False
         
+
 def find_end_block(needed_token, incrementor, start, end):
         max_length = len(tokens)
         if start >= max_length and end >= max_length:
@@ -1897,6 +1906,230 @@ def loop():
         else:
                 output_console("error::expected IM OUTTA YR " + label) # NO IM OUTTA YR FOUND
                 return False
+
+
+
+	# OIC
+	index_oic = find_end_block("OIC", ["O RLY?", "WTF?"], line_number, len(tokens))
+	has_oic = index_oic > -1 and get_line(index_oic)=="OIC"
+
+	if has_oic:
+		# check if WTF? OIC has contents
+		if index_oic-line_number==0:
+			output_console("error at: " + get_line(line_number))
+			return False
+
+		# OMG
+		index_omg = find_line("OMG", line_number, line_number+1)
+		has_omg = index_omg > -1
+
+		# OMGWTF
+		index_omgwtf = find_keyword("OMGWTF", line_number, index_oic)
+		has_omgwtf = index_omgwtf > -1 and get_line(index_omgwtf)=="OMGWTF"
+
+		# flag
+		matched = False
+		# cases
+		cases = []
+
+		if has_omg: 
+			# find the indices of the cases that are connected to the current block of switch case only
+			cases =[index_omg]
+
+			index_omg += 1
+			while index_omg < index_oic:
+				index_omg = find_keyword("OMG", index_omg, index_oic)
+				if index_omg == -1: # error within nested block
+					output_console("error at: " + get_line(index_oic))
+					return False
+				elif index_omg == -2: # no [more] OMG
+					break
+				cases.append(index_omg)
+				index_omg += 1
+
+			# verify all blocks found inside (even in nested switch cases)
+			is_valid = validate_blocks(cases[0], index_oic)
+
+			if not is_valid[0]:
+				output_console("error at: " + get_line(is_valid[1]))
+				return False
+
+			# check the value of IT
+			it = symbols["IT"]
+			if it=="NOOB":
+				it = "FAIL"
+			
+			# find where it matches
+			for case in cases:
+				token = tokens[case][1]
+				if token=='"': # string
+					token = tokens[case][2]
+				if token==it:
+					line_number = case+1
+					matched = True
+					break
+
+		else: # if no OMG, there must be OMGWTF
+			if index_omgwtf != line_number and index_oic-index_omgwtf==1:
+				output_console("error::expected OMG or OMGWTF at: " + get_line(line_number))
+				return False
+
+		if not matched:
+			if not has_omgwtf: # no match, no default case
+				line_number = index_oic+1
+				return True
+			else:
+				line_number = index_omgwtf+1 
+
+		# GTFO
+		index_gtfo = find_keyword("GTFO", line_number, index_oic)
+		has_gtfo = index_gtfo > -1 and get_line(index_gtfo)=="GTFO"
+
+		end = index_oic
+
+		if has_gtfo:
+			end = index_gtfo
+
+		# remove the OMGWTF statement between matched case until end if there are any
+		if index_omgwtf in range(line_number, end):
+			tokens.pop(index_omgwtf)
+			end -= 1
+			index_oic -= 1
+
+		# remove OMG statements between matched case until end if there are any
+		count = 0
+		for case in cases:
+			if case in range(line_number, end):
+				tokens.pop(case-count)
+				end -= 1
+				index_oic -= 1
+				count += 1
+
+		# delete statements that wont run
+		del tokens[end:index_oic]
+		index_oic -= (index_oic - end)
+
+		# run the statements
+		while line_number < index_oic:
+			if not statement(True):
+				return False
+
+		line_number = index_oic+1
+		return True
+
+	else:
+		output_console("error::expected OIC") # NO OIC FOUND
+		return False
+
+def loop():
+	global tokens, line_number, is_break, in_loop
+	in_loop.append(True)
+
+	# IM IN YR
+	index_im_in_yr = line_number
+	if len(tokens[index_im_in_yr]) < 7:
+		output_console("error::expected IM IN YR <label> <operation> YR <variable> [TIL|WILE <expression>] at: " + get_line(index_im_in_yr))
+		return False
+
+	line = tokens[index_im_in_yr]
+	label = line[1]
+	operation = line[2]
+	variable = line[4]
+	clause = line[5]
+	expression = eval_expr(line[6:])
+	im_in_yr = get_line(index_im_in_yr)
+
+	# label
+	if not is_valid_identifier(label):
+		output_console("error::invalid label at: " + im_in_yr)
+		return False
+
+	# operation
+	if operation not in ["UPPIN", "NERFIN"]:
+		output_console("error::expected UPPIN or NERFIN at: " + im_in_yr)
+		return False
+
+	# YR
+	if line[3]!="YR":
+		output_console("error::expected YR at: " + im_in_yr)
+		return False		
+
+	# variable
+	if variable not in symbols.keys():
+		output_console("error::undeclared variable " + variable + " at: " + im_in_yr)
+		return False
+	elif cast(symbols[variable], "NUMBR")==False:
+		output_console("error::variable " + variable + " cannot be casted to numerical value at: " + im_in_yr)
+		return False
+
+	symbols[variable] = cast(symbols[variable], "NUMBR")
+
+	# TIL/WILE
+	if clause not in ["TIL", "WILE"]:
+		output_console("error::expected TIL or WILE at: " + im_in_yr)
+		return False
+
+	# expr
+	if not expression:
+		output_console("error::expected expression at: " + im_in_yr)
+		return False
+
+	# IM OUTTA YR
+	index_im_outta_yr = line_number
+	has_im_outta_yr = False
+
+	while index_im_outta_yr < len(tokens):
+		index_im_outta_yr = find_line(index_im_outta_yr, len(tokens))
+		if index_im_outta_yr == -1:
+			break
+		if tokens[index_im_outta_yr][1] == label:
+			has_im_outta_yr = True
+			break
+		index_im_outta_yr += 1
+
+	if has_im_outta_yr:
+		# verify nested blocks
+		is_valid = validate_blocks(index_im_in_yr, index_im_outta_yr)
+
+		if not is_valid[0]:
+			output_console("error at: " + get_line(is_valid[1]))
+			return False 
+
+		# result of expression in IT
+		it = cast(symbols["IT"], "TROOF")
+		should_run = False
+
+		if clause=="TIL":
+			should_run = True if it=="FAIL" else False
+		else:
+			should_run = True if it=="WIN" else False
+
+		increment = 1 if operation=="UPPIN" else -1
+
+		# loop the statements while expression is valid or no GTFO
+		while should_run and not is_break:
+			while line_number < index_im_outta_yr:
+				if not statement(True):
+					return False
+			symbols[variable] += increment
+			eval_expr(line[6:])
+			it = symbols["IT"]
+			it = cast(it, "TROOF")
+			should_run = False
+
+			if clause=="TIL":
+				should_run = True if it=="FAIL" else False
+			else:
+				should_run = True if it=="WIN" else False
+
+		is_break = False
+		in_loop.pop(-1)
+		line_number = index_im_outta_yr+1
+		return True
+
+	else:
+		output_console("error::expected IM OUTTA YR " + label) # NO IM OUTTA YR FOUND
+		return False
 
 
 
