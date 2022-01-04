@@ -233,7 +233,10 @@ def findMatch(line):
 					classify.append("String Delimiter")
 					classify.append("Literal")
 					classify.append("String Delimiter")
-				elif index in range(1,5):
+				elif index in range(1,3):
+					allTokens[-1] = eval(unspacedtoken)
+					classify.append("Literal")					
+				elif index in range(3,5):
 					classify.append("Literal")
 				# elif index == 5: // check if this is still necessary before deleting
 				# 	classify.append("String Delimiter")
@@ -304,8 +307,8 @@ def fill_table(tree, lhs, rhs):
 
 	for i in range(len(lhs)): # per line
 		for j in range(len(lhs[i])): # per token
-			lhs_value = lhs[i][j]
-			rhs_value = rhs[i][j]
+			lhs_value = str(lhs[i][j])
+			rhs_value = str(rhs[i][j])
 
 			tree.insert(parent='', index=END, text=count, values=(lhs_value, rhs_value)) # print to GUI
 			count += 1
@@ -327,7 +330,7 @@ def get_line(index):
 		return "KTHXBYE"
 
 	for word in tokens[index]: # get the whole line as string at line index
-		string += word + ' '
+		string += str(word) + ' '
 
 	return string.strip() 
 
@@ -368,6 +371,7 @@ def syntax_analyzer():
 				while line_number < len(tokens): # check the rest of the code
 					if not statement(False):
 						break 
+				fill_table(symbtable_table, [list(symbols.keys())], [list(symbols.values())])
 		else:
 			output_console("error at: " + get_line(i)) # program has no KTHXBYE
 	else: # program does not start with HAI
@@ -410,7 +414,7 @@ def statement(is_code_block):
 
 	# VARIABLE DECLARATION
 	if token=="I HAS A" and not is_code_block:
-		print("I HAS A")
+		return i_has_a()
 
 	# ARITHMETIC OPERATIONS
 	elif token=="SUM OF":
@@ -496,7 +500,7 @@ def statement(is_code_block):
 		regex = r"[a-zA-Z][a-zA-Z0-9_]*$"
 		
 		if re.search(regex, token): # [RE]ASSIGNMENTS
-			print("IDENTIFIER")
+			return assignment()
 		else: # UNKNOWN PATTERN
 			output_console("error at: " + get_line(line_number))
 			return False
@@ -507,8 +511,130 @@ def statement(is_code_block):
 def is_numeric(token):
 	return token.replace('.','',1).replace('-','',1).isdigit()
 
-def loop_expr(token_list):
+def is_literal(token):
+	# NUMBR, NUMBAR, YARN, TROOF
+	if token=='"':
+		return "YARN"
+	elif type(token)==int:
+		return "NUMBR"
+	elif type(token)==float:
+		return "NUMBAR"
+	elif token in ["WIN", "FAIL"]:
+		return "TROOF"
+	elif token=="NOOB":
+		return token
+
+	return False
+
+def is_valid_identifier(token):
+	# no keywords must be used as identifiers
+	regex = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*$")
+	keywords = ["WIN", "FAIL", "NUMBR", "NUMBAR", "YARN", "TROOF", "NOOB", "HAI", "KTHXBYE", "I HAS A", "ITZ", "VISIBLE", "GIMMEH", "R", "YA RLY", "NO WAI", "O RLY?", "OMG", "OMGWTF", "OIC", "WTF?", "UPPIN", "NERFIN", "TIL", "WILE", "IM OUTTA YR", "YR", "IM IN YR", "MEBBE", "SMOOSH", "MKAY", "AN", "A", "BOTH SAEM", "DIFFRINT", "BOTH OF", "EITHER OF", "WON OF", "NOT", "ANY OF", "ALL OF", "SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BTW", "OBTW", "TLDR", "MAEK", "IS NOW A", "FOUND YR", "GTFO","I IZ","HOW IZ I" ,"IF U SAY SO"]
+
+	if not regex.search(token) or token in keywords:
+		return False
+
+	return True
+
+def eval_expr(token_list):
 	# call expression
+	return True
+
+def i_has_a():
+	global line_number
+	line = tokens[line_number]
+	length = len(line)
+
+	if length < 2:
+		output_console("error::unexpected EOL at: " + get_line(line_number))
+		return False
+
+	# get the variable
+	l_value = line[1]
+
+	if not is_valid_identifier(l_value):
+		output_console("error::invalid variable at: " + get_line(line_number))
+		return False
+
+	if l_value in symbols.keys():
+		output_console("error::redeclaration at: " + get_line(line_number))
+		return False		
+
+	if length==2: # uninitialized
+		symbols[l_value] = "NOOB"
+	elif length >= 4 and line[2]=="ITZ": # initialized
+		r_value = line[3]
+		if is_literal(r_value)=="YARN" and length==6: # yarn
+			symbols[l_value] = line[4]
+		elif is_literal(r_value) and length==4: # other literals
+			symbols[l_value] = r_value
+		elif r_value in symbols.keys() and length==4: # variable
+			symbols[l_value] = symbols[r_value]
+		elif eval_expr(line[3:]): # expression
+			symbols[l_value] = symbols["IT"]
+		else:
+			output_console("error::in the literal, variable, or expression at: " + get_line(line_number))
+			return False
+	else:
+		output_console("error at: " + get_line(line_number))
+		return False
+
+	line_number += 1
+	return True
+
+
+def assignment():
+	global line_number
+
+	line = tokens[line_number]
+	length = len(line)
+
+	# check if line has valid length
+	if length < 3:
+		output_console("error::unexpected EOL at: " + get_line(line_number))
+		return False
+
+	# check if lhs is an existing variable
+	lhs = line[0]
+	
+	if lhs not in symbols.keys():
+		output_console("error::undeclared variable at: " + get_line(line_number))
+		return False
+
+	# check if the next token is R or IS NOW A
+	if line[1]=="IS NOW A":
+		if length != 3:
+			output_console("error at: " + get_line(line_number))
+			return False
+		line[1] = "R"
+		line.insert(2, "MAEK")
+		length = len(line)
+	elif line[1]!="R":
+		output_console("error::expected R or IS NOW A at: " + get_line(line_number))
+		return False
+
+	# check if rhs is literal, variable, typecast, or expr
+	rhs = line[2]
+	value = ''
+	eol = False
+
+	if is_literal(rhs)=="YARN" and length==5:
+		symbols[lhs] = line[3]
+	elif is_literal(rhs) and length==3:
+		symbols[lhs] = rhs
+	elif rhs in symbols.keys() and length==3:
+		symbols[lhs] = symbols[rhs]
+	elif rhs=="MAEK":
+		if not typecast(line[2:], lhs):
+			return False
+	elif eval_expr(line[2:]):
+		symbols[lhs] = symbols["IT"]
+	else:
+		output_console("error at: " + get_line(line_number))
+		return False
+
+	# update line number and return true
+	line_number += 1
 	return True
 
 def cast(variable, needed_type):
@@ -563,7 +689,7 @@ def cast(variable, needed_type):
 
 def typecast(token_list, dest):
 	valid_types = ['TROOF', 'YARN', 'NUMBR', 'NUMBAR', 'NOOB']
-	type_result = line[-1]
+	type_result = token_list[-1]
 
 	# check if type is valid
 	if type_result not in valid_types:
@@ -571,20 +697,31 @@ def typecast(token_list, dest):
 		return False
 
 	# check if has A
-	has_a = "A" in line
+	has_a = "A" in token_list
 	expr_end = -2 if has_a else -1
-	expr_result = loop_expr(token_list[1:expr_end])
-	value = ''
+	expr_result = eval_expr(token_list[1:expr_end])
+	value = token_list[1]
 
 	if expr_result: # expression
 		value = 'IT' 
-	elif src in symbols.keys(): # variable
-		value = line[1]
-	else:
+	elif len(token_list[1:expr_end])!=1 or value not in symbols.keys(): # variable
 		output_console("error::in expression or variable at: " + get_line(line_number))
 		return False
-	
+
 	value = symbols[value]
+
+	# special case for explicit casting
+	if value=="NOOB":
+		if type_result=="NUMBR":
+			symbols[dest] = 0 # store the result to dest
+			return True
+		elif type_result=="NUMBAR":
+			symbols[dest] = 0.0 # store the result to dest
+			return True
+		elif type_result=="YARN":
+			symbols[dest] = '' # store the result to dest
+			return True
+	
 	result = cast(value, type_result) # typecast
 
 	if result==False: # typecast failed
@@ -593,6 +730,9 @@ def typecast(token_list, dest):
 
 	symbols[dest] = result # store the result to dest
 	return True
+
+
+###CODE BLOCKS###
 
 def find_end_block(needed_token, incrementor, start, end):
 	max_length = len(tokens)
@@ -639,21 +779,19 @@ def validate_blocks(start, end): # checks if blocks are valid and non-empty
 		token = line[0]
 		if token=="OMG": # check if valid OMG
 			length = len(line)
-			if length == 2:
-				literal = line[1]
-				if is_numeric(literal) or literal in ["WIN", "FAIL"]: 
-					pass
-			elif length == 4:
-				if line[1]=='"':
-					pass
-			else:
+			literal = is_literal(line[1])
+			if literal==False:
+				return [False, i]
+			elif literal=="YARN" and length!=4:
+				return [False, i]
+			elif literal in ["NUMBR", "NUMBAR", "TROOF"] and length!=2:
 				return [False, i]
 			if next_statement in invalid:
 				return [False, i+1]
 		elif token=="IM IN YR": # check if valid loop
 			if len(line) > 7:
 				regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
-				if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (not loop_expr(line[6:])): 
+				if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (eval_expr(line[6:])==False): 
 					return [False, i]
 			else:
 				return [False, i]
@@ -812,8 +950,6 @@ def switch_case():
 				token = tokens[case][1]
 				if token=='"': # string
 					token = tokens[case][2]
-				elif is_numeric(token): # numbr/numbar
-					token = eval(token)
 				if token==it:
 					line_number = case+1
 					matched = True
@@ -886,14 +1022,11 @@ def loop():
 	operation = line[2]
 	variable = line[4]
 	clause = line[5]
-	expression = loop_expr(line[6:])
+	expression = eval_expr(line[6:])
 	im_in_yr = get_line(index_im_in_yr)
 
 	# label
-	label_regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
-	try:
-		label_regex.search(line[1]).group()
-	except:
+	if not is_valid_identifier(label):
 		output_console("error::invalid label at: " + im_in_yr)
 		return False
 
@@ -965,7 +1098,7 @@ def loop():
 				if not statement(True):
 					return False
 			symbols[variable] += increment
-			loop_expr(line[6:])
+			eval_expr(line[6:])
 			it = symbols["IT"]
 			it = cast(it, "TROOF")
 			should_run = False
