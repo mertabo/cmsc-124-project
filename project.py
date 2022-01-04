@@ -4,18 +4,15 @@ from tkinter import filedialog as fd
 import tkinter.scrolledtext as scrolledtext
 import re
 
-# notes and bugs
-# need a way to throw error if theres no match
-# function name gets separated bc it has spaces (sa sample)
-
-##### PROCESS #####
-# open file -> print file to text editor -> click execute (run) -> remove comments -> remove whitespaces -> tokenize (update global variable tokens then get the classification of each token)
-# fill lexemes table (lexical analyzer)
-
 ##### GLOBAL VARIABLES #####
 tokens = []
 line_number = 0
 symbols = {"IT": "NOOB"}
+# for operations
+expression = []
+# for loops
+is_break = False 
+in_loop = []
 
 ##### FUNCTIONS #####
 def select_file():
@@ -40,10 +37,17 @@ def show_file_contents(contents):
         text_editor.insert(1.0, contents) # print contents to GUI
 
 def run():
-        # reset some variables
-        global line_number, tokens
+        # reset variables
+        global tokens, line_number, symbols, expression, is_break, in_loop
+        tokens = []
         line_number = 0
+        symbols = {"IT": "NOOB"}
+        expression = []
+        is_break = False 
+        in_loop = []
+        console["state"] = "normal"
         console.delete(1.0, END)
+        console["state"] = "disabled"
 
         code = text_editor.get(1.0,'end-1c') # get the input from Text widget
         if code.strip()=='': return # no input
@@ -80,10 +84,8 @@ def remove_whitespaces(src_code):
         return temp
 
 def findMatch(line):
-        global regExDigit
-        
         #Literal(0-4)
-        yarn = r"(\")(.*?)(\")"
+        yarn = r"(\")([^\"]*)(\")"
         numbr = r"-?[0-9]+"
         numbar = r"-?[0-9]+[\.][0-9]*"
         troof = r"(WIN|FAIL)"
@@ -187,7 +189,6 @@ def findMatch(line):
         #Unknown Keyword (58)
         unknown = r".*?"
 
-        regExDigit = [numbr, numbar]
         regEx = [yarn, numbr, numbar, troof, typeLiteral,
                 strdelimiter, hai, kthxbye, ihasa, itz, visible, gimmeh,
                 r, yarly, nowai, orly, omg, omgwtf, oic, wtf, uppin,
@@ -227,7 +228,10 @@ def findMatch(line):
                                         classify.append("String Delimiter")
                                         classify.append("Literal")
                                         classify.append("String Delimiter")
-                                elif index in range(1,5):
+                                elif index in range(1,3):
+                                        allTokens[-1] = eval(unspacedtoken)
+                                        classify.append("Literal")                                      
+                                elif index in range(3,5):
                                         classify.append("Literal")
                                 # elif index == 5: // check if this is still necessary before deleting
                                 #       classify.append("String Delimiter")
@@ -298,8 +302,8 @@ def fill_table(tree, lhs, rhs):
 
         for i in range(len(lhs)): # per line
                 for j in range(len(lhs[i])): # per token
-                        lhs_value = lhs[i][j]
-                        rhs_value = rhs[i][j]
+                        lhs_value = str(lhs[i][j])
+                        rhs_value = str(rhs[i][j])
 
                         tree.insert(parent='', index=END, text=count, values=(lhs_value, rhs_value)) # print to GUI
                         count += 1
@@ -321,7 +325,7 @@ def get_line(index):
                 return "KTHXBYE"
 
         for word in tokens[index]: # get the whole line as string at line index
-                string += word + ' '
+                string += str(word) + ' '
 
         return string.strip() 
 
@@ -344,8 +348,10 @@ def remove_comment_delims():
         return new_tokens
 
 def output_console(contents):
+        console["state"] = "normal"
         console.insert(END, contents) # print contents to GUI
         console.insert(END, "\n") # print contents to GUI
+        console["state"] = "disabled"
 
 def syntax_analyzer():
         global tokens
@@ -360,6 +366,7 @@ def syntax_analyzer():
                                 while line_number < len(tokens): # check the rest of the code
                                         if not statement(False):
                                                 break 
+                                fill_table(symbtable_table, [list(symbols.keys())], [list(symbols.values())])
                 else:
                         output_console("error at: " + get_line(i)) # program has no KTHXBYE
         else: # program does not start with HAI
@@ -397,44 +404,58 @@ def check_token(needed_token, index):
 
 def statement(is_code_block):
         # THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
-        global line_number, expression
+        global line_number
         token = get_current_token(0)
-        
-        expression = []
+
         # VARIABLE DECLARATION
         if token=="I HAS A" and not is_code_block:
-                print("I HAS A")
+                return i_has_a()
 
         # ARITHMETIC OPERATIONS
         elif token=="SUM OF":
                 result = (sum_of(tokens[line_number]))
+                current_line = get_line(line_number)
                 line_number += 1
                 if result: #if syntactically correct, solve
-                        get_value(expression)
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
                 return result
         elif token=="DIFF OF":
-                result = diff_of(tokens[line_number])
+                result = (diff_of(tokens[line_number]))
+                current_line = get_line(line_number)
                 line_number += 1
                 if result: #if syntactically correct, solve
-                        get_value(expression)
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
                 return result
         elif token=="PRODUKT OF":
                 result = prod_of(tokens[line_number])
+                current_line = get_line(line_number)
                 line_number += 1
                 if result: #if syntactically correct, solve
-                        get_value(expression)
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
                 return result
         elif token=="QUOSHUNT OF":
                 result = quo_of(tokens[line_number])
+                current_line = get_line(line_number)
                 line_number += 1
                 if result: #if syntactically correct, solve
-                        get_value(expression)
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
                 return result
         elif token=="MOD OF":
                 result = mod_of(tokens[line_number])
+                current_line = get_line(line_number)
                 line_number += 1
                 if result: #if syntactically correct, solve
-                        get_value(expression)
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
                 return result
         elif token=="BIGGR OF":
                 result = biggr_of(tokens[line_number])
@@ -445,12 +466,17 @@ def statement(is_code_block):
         elif token=="SMALLR OF":
                 result = smallr_of(tokens[line_number])
                 line_number += 1
+                current_line = get_line(line_number)
+                line_number += 1
                 if result: #if syntactically correct, solve
-                        get_value(expression)
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
                 return result
 
         # BOOLEAN OPERATIONS
         elif token=="BOTH OF":
+                print("yes both of")
                 result = bool_op(tokens[line_number])
                 line_number += 1
                 if result: #if syntactically correct, solve
@@ -499,7 +525,9 @@ def statement(is_code_block):
 
         # TYPECAST
         elif token=="MAEK":
-                print("MAEK")
+                if typecast(tokens[line_number], "IT"):
+                        line_number += 1
+                        return True
 
         # INPUT/OUTPUT
         elif token=="VISIBLE":
@@ -513,17 +541,20 @@ def statement(is_code_block):
 
         # SWITCH CASE
         elif token=="WTF?":
-                print("WTF?")
+                return switch_case()
+
         # LOOP
         elif token=="IM IN YR":
-                print("IM IN YR")
+                return loop()
 
-        #### FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
-        #### FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
-        #### FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS FUNCTIONS 
-        
         # MISUSED KEYWORDS
-        elif token=="ITZ" or token=="R" or token=="YA RLY" or token=="NO WAI" or token=="O RLY?" or token=="OMG" or token=="OMGWTF" or token=="OIC" or token=="UPPIN" or token=="NERFIN" or token=="TIL" or token=="WILE" or token=="IM OUTTA YR" or token=="YR" or token=="MEBBE" or token=="MKAY" or token=="AN" or token=="A" or token=="IS NOW A":
+        elif token=="GTFO" and is_code_block and in_loop:
+                global is_break
+                is_break = True
+                line_number += 1
+                return True
+
+        elif token=="GTFO" or token=="ITZ" or token=="R" or token=="YA RLY" or token=="NO WAI" or token=="O RLY?" or token=="OMG" or token=="OMGWTF" or token=="OIC" or token=="UPPIN" or token=="NERFIN" or token=="TIL" or token=="WILE" or token=="IM OUTTA YR" or token=="YR" or token=="MEBBE" or token=="MKAY" or token=="AN" or token=="A" or token=="IS NOW A":
                 output_console("error at: " + get_line(line_number))
                 return False
         
@@ -531,7 +562,7 @@ def statement(is_code_block):
                 regex = r"[a-zA-Z][a-zA-Z0-9_]*$"
                 
                 if re.search(regex, token): # [RE]ASSIGNMENTS
-                        print("IDENTIFIER")
+                        return assignment()
                 else: # UNKNOWN PATTERN
                         output_console("error at: " + get_line(line_number))
                         return False
@@ -539,43 +570,192 @@ def statement(is_code_block):
         line_number += 1
         return True
 
+def is_numeric(token):
+        return token.replace('.','',1).replace('-','',1).isdigit()
+
+def is_literal(token):
+        # NUMBR, NUMBAR, YARN, TROOF
+        if token=='"':
+                return "YARN"
+        elif type(token)==int:
+                return "NUMBR"
+        elif type(token)==float:
+                return "NUMBAR"
+        elif token in ["WIN", "FAIL"]:
+                return "TROOF"
+        elif token=="NOOB":
+                return token
+
+        return False
+
+def is_valid_identifier(token):
+        # no keywords must be used as identifiers
+        regex = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*$")
+        keywords = ["WIN", "FAIL", "NUMBR", "NUMBAR", "YARN", "TROOF", "NOOB", "HAI", "KTHXBYE", "I HAS A", "ITZ", "VISIBLE", "GIMMEH", "R", "YA RLY", "NO WAI", "O RLY?", "OMG", "OMGWTF", "OIC", "WTF?", "UPPIN", "NERFIN", "TIL", "WILE", "IM OUTTA YR", "YR", "IM IN YR", "MEBBE", "SMOOSH", "MKAY", "AN", "A", "BOTH SAEM", "DIFFRINT", "BOTH OF", "EITHER OF", "WON OF", "NOT", "ANY OF", "ALL OF", "SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BTW", "OBTW", "TLDR", "MAEK", "IS NOW A", "FOUND YR", "GTFO","I IZ","HOW IZ I" ,"IF U SAY SO"]
+
+        if not regex.search(token) or token in keywords:
+                return False
+
+        return True
+
+def eval_expr(token_list):
+        global line_number
+        if len(token_list) < 2:
+                return False
+        
+        token = token_list[0]
+
+        # ARITHMETIC OPERATIONS
+        if token=="SUM OF":
+                result = (sum_of(tokens[line_number]))
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="DIFF OF":
+                result = diff_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="PRODUKT OF":
+                result = prod_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="QUOSHUNT OF":
+                result = quo_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="MOD OF":
+                result = mod_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="BIGGR OF":
+                result = biggr_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="SMALLR OF":
+                result = smallr_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+
+        # BOOLEAN OPERATIONS
+        elif token=="BOTH OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+        elif token=="EITHER OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+        elif token=="WON OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+        elif token=="NOT":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+        elif token=="ALL OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+        elif token=="ANY OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+
+        # COMPARISON OPERATIONS
+        elif token=="BOTH SAEM":
+                return both_saem(tokens[line_number])
+        elif token=="DIFFRINT":
+                return diffrint(tokens[line_number])
+
+        return True
+
+###START OF OPERATIONS####
+
 #FUNCTIONS FOR ARITHMETIC OPERATIONS
 def get_value(listOp):
-        global symbols
+        global symbols, expression 
         listOp = listOp[::-1]
-       
+           
         final_expr = "("
         for index, element in enumerate(listOp):
                 if element == "max":
-                        final_expr = "max" + final_expr +"," + listOp[index+1]+")"
+                        final_expr = "max" + final_expr +"," + str(listOp[index+1]) +")"
                         del listOp[index+1]
                 elif element == "min":
-                        final_expr = "min" + final_expr +"," + listOp[index+1]+")"
+                        final_expr = "min" + final_expr +"," + str(listOp[index+1]) +")"
                         del listOp[index+1]
                 elif index in range(0,3):
-                        final_expr = final_expr + element
+                        final_expr = final_expr + str(element)
                 elif index == 3:
-                        final_expr = final_expr + ")" + element
+                        final_expr = final_expr + ")" + str(element)
                 elif (index % 2) == 0:
-                        final_expr = "(" + final_expr + element + ")"
+                        final_expr = "(" + final_expr + str(element) + ")"
                 else:
-                        final_expr = final_expr + element
+                        final_expr = final_expr + str(element)
         if (len(listOp)) == 3:
                 final_expr = final_expr + ")"
-       
+           
         result = (eval(final_expr)) #return computed value
+        expression = []
         symbols["IT"] = result
         
 def check_digit(token):
         global expr 
         is_valid = False
-        if (bool(re.match(regExDigit[0], token))): #check if numbr:
+        if type(token)==int: #check if numbr:
                 expr = token
                 is_valid = True
-        elif (bool(re.match(regExDigit[1], token))): #check if numbar:
+        elif type(token)==float: #check if numbar:
                 expr = token
                 is_valid = True
-        elif (bool(re.match(r"[a-zA-Z][a-zA-Z0-9_]*", token))): #if identifier check if value is numbr/numbar
+        elif is_valid_identifier(token): #if identifier check if value is numbr/numbar
                 if token in symbols.keys():
                         if symbols[token].isnumeric():
                                 expr = symbols[token]
@@ -596,7 +776,7 @@ def check_implicit(line):
                 return False
         
 def next_op(line):
-
+        print(line)
         if line == []:
                 return True
         elif line[0] == "SUM OF":
@@ -614,11 +794,11 @@ def next_op(line):
         elif line[0] == "SMALLR OF":
                 return smallr_of(line)
         else:
-                output_console("error at: " + get_line(line_number))
                 return False
 
 def check_nested(line):
-        global expression
+        global expression, line_number
+        result = False
         if line[-1] == "AN":
                 del line[-1]
                 del line[0]
@@ -630,14 +810,10 @@ def check_nested(line):
                         return check_implicit(line)
                 else:
                         return next_op(line)
-                                
-        else:
-                output_console("error at: " + get_line(line_number))
-                return False
+        
 
 def sum_of(line):
-        global expression, expr
-        
+        global expression, expr, line_number
         if check_digit(line[-1]):
                 del line[-1]
                 expression.append(expr)
@@ -649,9 +825,7 @@ def sum_of(line):
                 expression.append("+")
                 return check_nested(line)
         else:
-                output_console("error at: " + get_line(line_number))
                 return False
-
 
 def diff_of(line):
         if check_digit(line[-1]):
@@ -665,7 +839,6 @@ def diff_of(line):
                 expression.append("-")
                 return check_nested(line)
         else:
-                output_console("error at: " + get_line(line_number))
                 return False
         
 def prod_of(line):
@@ -744,23 +917,23 @@ def smallr_of(line):
                 return False
 
 #FUNCTIONS FOR BOOLEAN OPERATORS
-def eval_troof(expression):
-        global symbols
+def eval_troof(expr):
+        global symbols, expression
         final_expr = ""
-        for index, element in enumerate(expression):
+        for index, element in enumerate(expr):
                 if element == "WIN":
-                        expression[index] = "True"
+                        expr[index] = "True"
                 elif element == "FAIL":
-                        expression[index] = "False"
+                        expr[index] = "False"
                         
-        for index, element in enumerate(expression):
+        for index, element in enumerate(expr):
                 if element == "not ":
                         final_expr = element + final_expr
                 else:
                         final_expr = final_expr + element 
 
         result = (eval(final_expr))
-        
+        expression = []
         if result == True:
                 result = "WIN"
         else:
@@ -768,7 +941,6 @@ def eval_troof(expression):
 
         symbols["IT"] = result
                 
-                        
 def check_troof(token):
         is_valid = False
         global troof
@@ -844,8 +1016,8 @@ def next_op_allany(line, operation):
                 return False
         
 def allany_of(line):
-        global expression, troof
-
+        global expression, troof, line_number
+        print("expr")
         if line[0] == "NOT":
                 del line[0]
                 expression.append("not ")
@@ -880,6 +1052,7 @@ def allany_of(line):
                                 del line[-1]
                                 return next_op_allany(line, ' or ')
                         else:
+                                output_console("error at: " + get_line(line_number))
                                 return False
                         del line[0]
                         if line[0] == "AN":
@@ -906,9 +1079,8 @@ def allany_of(line):
         else:
                 return False
         
-        
 def bool_op(line):
-        global expression
+        global expression, line_number
         if line[0] == "ALL OF" and line[-1] == "MKAY":
                 del line[0]
                 del line[-1]
@@ -1034,6 +1206,7 @@ def both_saem(line):
         else:
                 output_console("error at: " + get_line(line_number))
                 return False
+
 def diffrint(line):
         global next_num, line_number
         line_number += 1
@@ -1131,7 +1304,6 @@ def diffrint(line):
                 output_console("error at: " + get_line(line_number))
                 return False
         
-        
 def find_end_block(needed_token, incrementor, start, end):
         max_length = len(tokens)
         if start >= max_length and end >= max_length:
@@ -1149,28 +1321,308 @@ def find_end_block(needed_token, incrementor, start, end):
                         return i
         return -1
 
-                
+###END OF OPERATIONS###
+
+def i_has_a():
+        global line_number
+        line = tokens[line_number]
+        length = len(line)
+
+        if length < 2:
+                output_console("error::unexpected EOL at: " + get_line(line_number))
+                return False
+
+        # get the variable
+        l_value = line[1]
+
+        if not is_valid_identifier(l_value):
+                output_console("error::invalid variable at: " + get_line(line_number))
+                return False
+
+        if l_value in symbols.keys():
+                output_console("error::redeclaration at: " + get_line(line_number))
+                return False            
+
+        if length==2: # uninitialized
+                symbols[l_value] = "NOOB"
+        elif length >= 4 and line[2]=="ITZ": # initialized
+                r_value = line[3]
+                if is_literal(r_value)=="YARN" and length==6: # yarn
+                        symbols[l_value] = line[4]
+                elif is_literal(r_value) and length==4: # other literals
+                        symbols[l_value] = r_value
+                elif r_value in symbols.keys() and length==4: # variable
+                        symbols[l_value] = symbols[r_value]
+                elif eval_expr(line[3:]): # expression
+                        symbols[l_value] = symbols["IT"]
+                else:
+                        output_console("error::in the literal, variable, or expression at: " + get_line(line_number))
+                        return False
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
+
+        line_number += 1
+        return True
+
+def assignment():
+        global line_number
+
+        line = tokens[line_number]
+        length = len(line)
+
+        # check if line has valid length
+        if length < 3:
+                output_console("error::unexpected EOL at: " + get_line(line_number))
+                return False
+
+        # check if lhs is an existing variable
+        lhs = line[0]
+        
+        if lhs not in symbols.keys():
+                output_console("error::undeclared variable at: " + get_line(line_number))
+                return False
+
+        # check if the next token is R or IS NOW A
+        if line[1]=="IS NOW A":
+                if length != 3:
+                        output_console("error at: " + get_line(line_number))
+                        return False
+                line[1] = "R"
+                line.insert(2, "MAEK")
+                length = len(line)
+        elif line[1]!="R":
+                output_console("error::expected R or IS NOW A at: " + get_line(line_number))
+                return False
+
+        # check if rhs is literal, variable, typecast, or expr
+        rhs = line[2]
+        value = ''
+        eol = False
+
+        if is_literal(rhs)=="YARN" and length==5:
+                symbols[lhs] = line[3]
+        elif is_literal(rhs) and length==3:
+                symbols[lhs] = rhs
+        elif rhs in symbols.keys() and length==3:
+                symbols[lhs] = symbols[rhs]
+        elif rhs=="MAEK":
+                if not typecast(line[2:], lhs):
+                        return False
+        elif eval_expr(line[2:]):
+                symbols[lhs] = symbols["IT"]
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
+
+        # update line number and return true
+        line_number += 1
+        return True
+
+def cast(variable, needed_type):
+        # NOOB, "", 0 -> FAIL
+        # OTHERS -> WIN
+        # WIN -> NUMBR, NUMBAR (1[.0])
+        # FAIL -> NUMBR, NUMBAR (0[.0])
+        # NUMBR <-> NUMBAR
+        # NUMBR, NUMBAR(2 DECIMAL) <-> YARN
+        if needed_type=="NOOB":
+                return "NOOB"
+
+        elif needed_type=="TROOF":
+                if variable in ["WIN", "FAIL"]:
+                        return variable
+                elif variable in ["NOOB", '', 0]:
+                        return "FAIL"
+                else:
+                        return "WIN"
+        
+        elif needed_type=="YARN":
+                if type(variable)==str:
+                        return variable
+                elif type(variable)==int or type(variable)==float:
+                        return str(variable)
+        
+        elif needed_type=="NUMBR":
+                if type(variable)==int:
+                        return variable
+                elif type(variable)==float:
+                        return int(variable)
+                elif variable=="WIN":
+                        return 1
+                elif variable=="FAIL":
+                        return 0
+                elif is_numeric(variable):
+                        return int(eval(variable))
+
+        elif needed_type=="NUMBAR":
+                if type(variable)==float:
+                        return variable
+                elif type(variable)==int:
+                        return float(variable)
+                elif variable=="WIN":
+                        return 1.0
+                elif variable=="FAIL":
+                        return 0.0
+                elif is_numeric(variable):
+                        return float(eval(variable))
+
+        return False
+
+def typecast(token_list, dest):
+        valid_types = ['TROOF', 'YARN', 'NUMBR', 'NUMBAR', 'NOOB']
+        type_result = token_list[-1]
+
+        # check if type is valid
+        if type_result not in valid_types:
+                output_console("error::type must be TROOF, YARN, NUMBR, NUMBAR, or NOOB at: " + get_line(line_number))
+                return False
+
+        # check if has A
+        has_a = "A" in token_list
+        expr_end = -2 if has_a else -1
+        expr_result = eval_expr(token_list[1:expr_end])
+        value = token_list[1]
+
+        if expr_result: # expression
+                value = 'IT' 
+        elif len(token_list[1:expr_end])!=1 or value not in symbols.keys(): # variable
+                output_console("error::in expression or variable at: " + get_line(line_number))
+                return False
+
+        value = symbols[value]
+
+        # special case for explicit casting
+        if value=="NOOB":
+                if type_result=="NUMBR":
+                        symbols[dest] = 0 # store the result to dest
+                        return True
+                elif type_result=="NUMBAR":
+                        symbols[dest] = 0.0 # store the result to dest
+                        return True
+                elif type_result=="YARN":
+                        symbols[dest] = '' # store the result to dest
+                        return True
+        
+        result = cast(value, type_result) # typecast
+
+        if result==False: # typecast failed
+                output_console("error::cannot be typecasted at: " + get_line(line_number))
+                return False    
+
+        symbols[dest] = result # store the result to dest
+        return True
+
+###CODE BLOCKS###
+
+def find_end_block(needed_token, incrementor, start, end):
+        max_length = len(tokens)
+        if start >= max_length and end > max_length:
+                return -1
+
+        count = 1
+        for i in range(start, end):
+                token = tokens[i][0]
+
+                if token==needed_token:
+                        count -= 1
+                elif token in incrementor:
+                        count += 1
+
+                if count==0: # found the pair/end of block code
+                        return i
+        return -1
+
+def find_keyword(needed_token, start, end):
+        while start < end:
+                token = tokens[start][0]
+                if token=="O RLY?" or token=="WTF?": # skip if-else and switch-case
+                        start = find_end_block("OIC", ["O RLY?", "WTF?"], start+1, end)
+                        if start < 0:
+                                return -1 
+                elif token=="IM IN YR": # skip loops
+                        start = find_end_block("IM OUTTA YR", ["IM IN YR"], start+1, end)
+                        if start < 0:
+                                return -1
+                elif token==needed_token:
+                        return start
+                start += 1
+        return -2 # no keyword found
+
+def validate_blocks(start, end): # checks if blocks are valid and non-empty
+        #IM IN YR
+        #YA RLY, NO WAI, OMG, OMGWTF, GTFO, OIC, IM OUTTA YR
+        invalid = ["YA RLY", "NO WAI", "OMG", "OMGWTF", "OIC", "IM OUTTA YR"]
+
+        for i in range(start, end):
+                next_statement = tokens[i+1][0]
+                line = tokens[i]
+                token = line[0]
+                if token=="OMG": # check if valid OMG
+                        length = len(line)
+                        literal = is_literal(line[1])
+                        if literal==False:
+                                return [False, i]
+                        elif literal=="YARN" and length!=4:
+                                return [False, i]
+                        elif literal in ["NUMBR", "NUMBAR", "TROOF"] and length!=2:
+                                return [False, i]
+                        if next_statement in invalid:
+                                return [False, i+1]
+                elif token=="IM IN YR": # check if valid loop
+                        if len(line) > 7:
+                                regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
+                                if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (eval_expr(line[6:])==False): 
+                                        return [False, i]
+                        else:
+                                return [False, i]
+                        if next_statement in invalid:
+                                return [False, i+1]
+                elif token=="IM OUTTA YR":
+                        if len(line) != 2:
+                                output_console("error at: " + get_line(i))
+                                return False
+
+                        # label
+                        label_regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
+                        try:
+                                label_regex.search(line[1]).group()
+                        except:
+                                output_console("error at: " + get_line(i))
+                                return False
+                elif token=="OIC":
+                        if get_line(i) != token:
+                                return [False, i]
+                elif token in invalid:
+                        if get_line(i) != token:
+                                return [False, i]
+                        if next_statement in invalid:
+                                return [False, i+1]
+
+        return [True, end]
+
 def if_then():
         # MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
         # MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
         # MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
 
-        global line_number
+        global line_number, tokens
 
         # O RLY?
         if get_line(line_number)=="O RLY?": 
                 line_number += 1
         else:
-                output_console("error at: " + get_line(line_number)) # NO O RLY? FOUND
+                output_console("error::expected O RLY? at: " + get_line(line_number)) # NO O RLY? FOUND
                 return False
 
         # YA RLY
         index_ya_rly = find_line("YA RLY", line_number, line_number+1)
+        has_ya_rly = index_ya_rly > -1 
 
-        if index_ya_rly > -1 and get_line(index_ya_rly)=="YA RLY":
+        if has_ya_rly:
                 line_number += 1
         else:
-                output_console("error at: " + get_line(line_number)) # NO YA RLY FOUND
+                output_console("error::expected YA RLY at: " + get_line(line_number)) # NO YA RLY FOUND
                 return False
 
         # OIC
@@ -1179,13 +1631,20 @@ def if_then():
 
         if has_oic:
                 # NO WAI
-                index_no_wai = find_line("NO WAI", line_number, index_oic+1)
+                index_no_wai = find_keyword("NO WAI", line_number, index_oic)
                 has_no_wai = index_no_wai > -1 and get_line(index_no_wai)=="NO WAI"
+
+                # verify all blocks found inside (even in nested if then)
+                is_valid = validate_blocks(index_ya_rly, index_oic)
+
+                if not is_valid[0]:
+                        output_console("error at: " + get_line(is_valid[1]))
+                        return False
 
                 # check the value of IT
                 it = symbols["IT"]
                 fail = ['', 0, "NOOB"]
-                
+
                 if it in fail: # FALSE
                         if has_no_wai: # has NO WAI clause
                                 line_number = index_no_wai+1
@@ -1204,8 +1663,241 @@ def if_then():
                 return True
 
         else:
-                output_console("error at: " + get_line(index_oic)) # NO OIC FOUND
+                output_console("error::expected OIC") # NO OIC FOUND
                 return False
+
+def switch_case():
+        global line_number, tokens
+
+        # WTF?
+        if get_line(line_number)=="WTF?": 
+                line_number += 1
+        else:
+                output_console("error at: " + get_line(line_number)) # NO O RLY? FOUND
+                return False
+
+        # OIC
+        index_oic = find_end_block("OIC", ["O RLY?", "WTF?"], line_number, len(tokens))
+        has_oic = index_oic > -1 and get_line(index_oic)=="OIC"
+
+        if has_oic:
+                # check if WTF? OIC has contents
+                if index_oic-line_number==0:
+                        output_console("error at: " + get_line(line_number))
+                        return False
+
+                # OMG
+                index_omg = find_line("OMG", line_number, line_number+1)
+                has_omg = index_omg > -1
+
+                # OMGWTF
+                index_omgwtf = find_keyword("OMGWTF", line_number, index_oic)
+                has_omgwtf = index_omgwtf > -1 and get_line(index_omgwtf)=="OMGWTF"
+
+                # flag
+                matched = False
+                # cases
+                cases = []
+
+                if has_omg: 
+                        # find the indices of the cases that are connected to the current block of switch case only
+                        cases =[index_omg]
+
+                        index_omg += 1
+                        while index_omg < index_oic:
+                                index_omg = find_keyword("OMG", index_omg, index_oic)
+                                if index_omg == -1: # error within nested block
+                                        output_console("error at: " + get_line(index_oic))
+                                        return False
+                                elif index_omg == -2: # no [more] OMG
+                                        break
+                                cases.append(index_omg)
+                                index_omg += 1
+
+                        # verify all blocks found inside (even in nested switch cases)
+                        is_valid = validate_blocks(cases[0], index_oic)
+
+                        if not is_valid[0]:
+                                output_console("error at: " + get_line(is_valid[1]))
+                                return False
+
+                        # check the value of IT
+                        it = symbols["IT"]
+                        if it=="NOOB":
+                                it = "FAIL"
+                        
+                        # find where it matches
+                        for case in cases:
+                                token = tokens[case][1]
+                                if token=='"': # string
+                                        token = tokens[case][2]
+                                if token==it:
+                                        line_number = case+1
+                                        matched = True
+                                        break
+
+                else: # if no OMG, there must be OMGWTF
+                        if index_omgwtf != line_number and index_oic-index_omgwtf==1:
+                                output_console("error::expected OMG or OMGWTF at: " + get_line(line_number))
+                                return False
+
+                if not matched:
+                        if not has_omgwtf: # no match, no default case
+                                line_number = index_oic+1
+                                return True
+                        else:
+                                line_number = index_omgwtf+1 
+
+                # GTFO
+                index_gtfo = find_keyword("GTFO", line_number, index_oic)
+                has_gtfo = index_gtfo > -1 and get_line(index_gtfo)=="GTFO"
+
+                end = index_oic
+
+                if has_gtfo:
+                        end = index_gtfo
+
+                # remove the OMGWTF statement between matched case until end if there are any
+                if index_omgwtf in range(line_number, end):
+                        tokens.pop(index_omgwtf)
+                        end -= 1
+                        index_oic -= 1
+
+                # remove OMG statements between matched case until end if there are any
+                count = 0
+                for case in cases:
+                        if case in range(line_number, end):
+                                tokens.pop(case-count)
+                                end -= 1
+                                index_oic -= 1
+                                count += 1
+
+                # delete statements that wont run
+                del tokens[end:index_oic]
+                index_oic -= (index_oic - end)
+
+                # run the statements
+                while line_number < index_oic:
+                        if not statement(True):
+                                return False
+
+                line_number = index_oic+1
+                return True
+
+        else:
+                output_console("error::expected OIC") # NO OIC FOUND
+                return False
+
+def loop():
+        global tokens, line_number, is_break, in_loop
+        in_loop.append(True)
+
+        # IM IN YR
+        index_im_in_yr = line_number
+        if len(tokens[index_im_in_yr]) < 7:
+                output_console("error::expected IM IN YR <label> <operation> YR <variable> [TIL|WILE <expression>] at: " + get_line(index_im_in_yr))
+                return False
+
+        line = tokens[index_im_in_yr]
+        label = line[1]
+        operation = line[2]
+        variable = line[4]
+        clause = line[5]
+        expression = eval_expr(line[6:])
+        im_in_yr = get_line(index_im_in_yr)
+
+        # label
+        if not is_valid_identifier(label):
+                output_console("error::invalid label at: " + im_in_yr)
+                return False
+
+        # operation
+        if operation not in ["UPPIN", "NERFIN"]:
+                output_console("error::expected UPPIN or NERFIN at: " + im_in_yr)
+                return False
+
+        # YR
+        if line[3]!="YR":
+                output_console("error::expected YR at: " + im_in_yr)
+                return False            
+
+        # variable
+        if variable not in symbols.keys():
+                output_console("error::undeclared variable " + variable + " at: " + im_in_yr)
+                return False
+        elif cast(symbols[variable], "NUMBR")==False:
+                output_console("error::variable " + variable + " cannot be casted to numerical value at: " + im_in_yr)
+                return False
+
+        symbols[variable] = cast(symbols[variable], "NUMBR")
+
+        # TIL/WILE
+        if clause not in ["TIL", "WILE"]:
+                output_console("error::expected TIL or WILE at: " + im_in_yr)
+                return False
+
+        # expr
+        if not expression:
+                output_console("error::expected expression at: " + im_in_yr)
+                return False
+
+        # IM OUTTA YR
+        index_im_outta_yr = line_number
+        has_im_outta_yr = False
+
+        while index_im_outta_yr < len(tokens):
+                index_im_outta_yr = find_line(index_im_outta_yr, len(tokens))
+                if index_im_outta_yr == -1:
+                        break
+                if tokens[index_im_outta_yr][1] == label:
+                        has_im_outta_yr = True
+                        break
+                index_im_outta_yr += 1
+
+        if has_im_outta_yr:
+                # verify nested blocks
+                is_valid = validate_blocks(index_im_in_yr, index_im_outta_yr)
+
+                if not is_valid[0]:
+                        output_console("error at: " + get_line(is_valid[1]))
+                        return False 
+
+                # result of expression in IT
+                it = cast(symbols["IT"], "TROOF")
+                should_run = False
+
+                if clause=="TIL":
+                        should_run = True if it=="FAIL" else False
+                else:
+                        should_run = True if it=="WIN" else False
+
+                increment = 1 if operation=="UPPIN" else -1
+
+                # loop the statements while expression is valid or no GTFO
+                while should_run and not is_break:
+                        while line_number < index_im_outta_yr:
+                                if not statement(True):
+                                        return False
+                        symbols[variable] += increment
+                        eval_expr(line[6:])
+                        it = symbols["IT"]
+                        it = cast(it, "TROOF")
+                        should_run = False
+
+                        if clause=="TIL":
+                                should_run = True if it=="FAIL" else False
+                        else:
+                                should_run = True if it=="WIN" else False
+
+                is_break = False
+                in_loop.pop(-1)
+                line_number = index_im_outta_yr+1
+                return True
+
+        else:
+                output_console("error::expected IM OUTTA YR " + label) # NO IM OUTTA YR FOUND
+                return False
+
 
 
 ##### GUI #####
@@ -1293,6 +1985,7 @@ run_btn.pack(pady=5, fill=X)
 ### CONSOLE ###
 console = scrolledtext.ScrolledText(main_frame)
 console.pack(expand=True, fill=BOTH)
+console["state"] = "disabled"
 
 ### start the app ###
 root.mainloop()
