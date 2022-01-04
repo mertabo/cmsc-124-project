@@ -454,7 +454,9 @@ def statement(is_code_block):
 
 	# TYPECAST
 	elif token=="MAEK":
-		print("MAEK")
+		if typecast(tokens[line_number], "IT"):
+			line_number += 1
+			return True
 
 	# INPUT/OUTPUT
 	elif token=="VISIBLE":
@@ -502,6 +504,96 @@ def statement(is_code_block):
 	line_number += 1
 	return True
 
+def is_numeric(token):
+	return token.replace('.','',1).replace('-','',1).isdigit()
+
+def loop_expr(token_list):
+	# call expression
+	return True
+
+def cast(variable, needed_type):
+	# NOOB, "", 0 -> FAIL
+	# OTHERS -> WIN
+	# WIN -> NUMBR, NUMBAR (1[.0])
+	# FAIL -> NUMBR, NUMBAR (0[.0])
+	# NUMBR <-> NUMBAR
+	# NUMBR, NUMBAR(2 DECIMAL) <-> YARN
+	if needed_type=="NOOB":
+		return "NOOB"
+
+	elif needed_type=="TROOF":
+		if variable in ["WIN", "FAIL"]:
+			return variable
+		elif variable in ["NOOB", '', 0]:
+			return "FAIL"
+		else:
+			return "WIN"
+	
+	elif needed_type=="YARN":
+		if type(variable)==str:
+			return variable
+		elif type(variable)==int or type(variable)==float:
+			return str(variable)
+	
+	elif needed_type=="NUMBR":
+		if type(variable)==int:
+			return variable
+		elif type(variable)==float:
+			return int(variable)
+		elif variable=="WIN":
+			return 1
+		elif variable=="FAIL":
+			return 0
+		elif is_numeric(variable):
+			return int(eval(variable))
+
+	elif needed_type=="NUMBAR":
+		if type(variable)==float:
+			return variable
+		elif type(variable)==int:
+			return float(variable)
+		elif variable=="WIN":
+			return 1.0
+		elif variable=="FAIL":
+			return 0.0
+		elif is_numeric(variable):
+			return float(eval(variable))
+
+	return False
+
+def typecast(token_list, dest):
+	valid_types = ['TROOF', 'YARN', 'NUMBR', 'NUMBAR', 'NOOB']
+	type_result = line[-1]
+
+	# check if type is valid
+	if type_result not in valid_types:
+		output_console("error::type must be TROOF, YARN, NUMBR, NUMBAR, or NOOB at: " + get_line(line_number))
+		return False
+
+	# check if has A
+	has_a = "A" in line
+	expr_end = -2 if has_a else -1
+	expr_result = loop_expr(token_list[1:expr_end])
+	value = ''
+
+	if expr_result: # expression
+		value = 'IT' 
+	elif src in symbols.keys(): # variable
+		value = line[1]
+	else:
+		output_console("error::in expression or variable at: " + get_line(line_number))
+		return False
+	
+	value = symbols[value]
+	result = cast(value, type_result) # typecast
+
+	if result==False: # typecast failed
+		output_console("error::cannot be typecasted at: " + get_line(line_number))
+		return False	
+
+	symbols[dest] = result # store the result to dest
+	return True
+
 def find_end_block(needed_token, incrementor, start, end):
 	max_length = len(tokens)
 	if start >= max_length and end > max_length:
@@ -536,10 +628,6 @@ def find_keyword(needed_token, start, end):
 		start += 1
 	return -2 # no keyword found
 
-def loop_expr(token_list):
-	# call expression
-	return True
-
 def validate_blocks(start, end): # checks if blocks are valid and non-empty
 	#IM IN YR
 	#YA RLY, NO WAI, OMG, OMGWTF, GTFO, OIC, IM OUTTA YR
@@ -553,7 +641,7 @@ def validate_blocks(start, end): # checks if blocks are valid and non-empty
 			length = len(line)
 			if length == 2:
 				literal = line[1]
-				if literal.replace('.','',1).replace('-','',1).isdigit() or literal in ["WIN", "FAIL"]: 
+				if is_numeric(literal) or literal in ["WIN", "FAIL"]: 
 					pass
 			elif length == 4:
 				if line[1]=='"':
@@ -724,7 +812,7 @@ def switch_case():
 				token = tokens[case][1]
 				if token=='"': # string
 					token = tokens[case][2]
-				elif token.replace('.','',1).replace('-','',1).isdigit(): # numbr/numbar
+				elif is_numeric(token): # numbr/numbar
 					token = eval(token)
 				if token==it:
 					line_number = case+1
@@ -783,54 +871,6 @@ def switch_case():
 		output_console("error::expected OIC") # NO OIC FOUND
 		return False
 
-def cast(variable, needed_type):
-	# NOOB, "", 0 -> FAIL
-	# OTHERS -> WIN
-	# WIN -> NUMBR, NUMBAR (1[.0])
-	# FAIL -> NUMBR, NUMBAR (0[.0])
-	# NUMBR <-> NUMBAR
-	# NUMBR, NUMBAR(2 DECIMAL) <-> YARN
-
-	if needed_type=="TROOF":
-		if variable in ["WIN", "FAIL"]:
-			return variable
-		elif variable in ["NOOB", '', 0]:
-			return "FAIL"
-		else:
-			return "WIN"
-	
-	elif needed_type=="YARN":
-		if type(variable)==str:
-			return variable
-		elif type(variable)==int or type(variable)==float:
-			return str(variable)
-	
-	elif needed_type=="NUMBR":
-		if type(variable)==int:
-			return variable
-		elif type(variable)==float:
-			return int(variable)
-		elif variable=="WIN":
-			return 1
-		elif variable=="FAIL":
-			return 0
-		elif variable.replace('.','',1).replace('-','',1).isdigit():
-			return int(eval(variable))
-
-	elif needed_type=="NUMBAR":
-		if type(variable)==float:
-			return variable
-		elif type(variable)==int:
-			return float(variable)
-		elif variable=="WIN":
-			return 1.0
-		elif variable=="FAIL":
-			return 0.0
-		elif variable.replace('.','',1).replace('-','',1).isdigit():
-			return float(eval(variable))
-
-	return False
-
 def loop():
 	global tokens, line_number, is_break, in_loop
 	in_loop.append(True)
@@ -871,9 +911,11 @@ def loop():
 	if variable not in symbols.keys():
 		output_console("error::undeclared variable " + variable + " at: " + im_in_yr)
 		return False
-	elif cast(variable, "NUMBR")==False:
+	elif cast(symbols[variable], "NUMBR")==False:
 		output_console("error::variable " + variable + " cannot be casted to numerical value at: " + im_in_yr)
 		return False
+
+	symbols[variable] = cast(symbols[variable], "NUMBR")
 
 	# TIL/WILE
 	if clause not in ["TIL", "WILE"]:
@@ -915,11 +957,14 @@ def loop():
 		else:
 			should_run = True if it=="WIN" else False
 
+		increment = 1 if operation=="UPPIN" else -1
+
 		# loop the statements while expression is valid or no GTFO
 		while should_run and not is_break:
 			while line_number < index_im_outta_yr:
 				if not statement(True):
 					return False
+			symbols[variable] += increment
 			loop_expr(line[6:])
 			it = symbols["IT"]
 			it = cast(it, "TROOF")
