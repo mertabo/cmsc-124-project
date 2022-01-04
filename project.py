@@ -16,1627 +16,1898 @@ in_loop = []
 
 ##### FUNCTIONS #####
 def select_file():
-	file_path = fd.askopenfilename(title="Open a LOLCODE file..", filetypes=(("lol files", ".lol"),)) # open a file dialog that shows .lol files only
-	if len(file_path) == 0: return # no file selected
+        file_path = fd.askopenfilename(title="Open a LOLCODE file..", filetypes=(("lol files", ".lol"),)) # open a file dialog that shows .lol files only
+        if len(file_path) == 0: return # no file selected
 
-	file_contents = read_file(file_path) # get the file contents
-	show_file_contents(file_contents) # show file contents to GUI
+        file_contents = read_file(file_path) # get the file contents
+        show_file_contents(file_contents) # show file contents to GUI
 
 def read_file(filename):
 
-	file = open(filename, "r")
+        file = open(filename, "r")
 
-	contents = file.read() 
-	
-	file.close()
+        contents = file.read() 
+        
+        file.close()
 
-	return contents
+        return contents
 
 def show_file_contents(contents):
-	text_editor.delete(1.0, END) # make sure text editor is clear
-	text_editor.insert(1.0, contents) # print contents to GUI
+        text_editor.delete(1.0, END) # make sure text editor is clear
+        text_editor.insert(1.0, contents) # print contents to GUI
 
 def run():
-	# reset variables
-	global tokens, line_number, symbols, expression, is_break, in_loop
-	tokens = []
-	line_number = 0
-	symbols = {"IT": "NOOB"}
-	expression = []
-	is_break = False 
-	in_loop = []
-	console["state"] = "normal"
-	console.delete(1.0, END)
-	console["state"] = "disabled"
 
-	code = text_editor.get(1.0,'end-1c') # get the input from Text widget
-	if code.strip()=='': return # no input
+        # reset variables
+        global tokens, line_number, symbols, expression, is_break, in_loop
+        tokens = []
+        line_number = 0
+        symbols = {"IT": "NOOB"}
+        expression = []
+        is_break = False 
+        in_loop = []
+        console["state"] = "normal"
+        console.delete(1.0, END)
+        console["state"] = "disabled"
 
-	code = remove_comments(code)
-	code = code.split("\n")
-	code = remove_whitespaces(code)
-	
-	tokenize(code)
-	has_lexical_errors = console.get(1.0,'end-1c') # get the input from Text widget
-	
-	if has_lexical_errors: return # has unknown keywords
+        code = text_editor.get(1.0,'end-1c') # get the input from Text widget
+        if code.strip()=='': return # no input
 
-	tokens = remove_comment_delims()
-	syntax_analyzer()
+        code = remove_comments(code)
+        code = code.split("\n")
+        code = remove_whitespaces(code)
+        
+        tokenize(code)
+        has_lexical_errors = console.get(1.0,'end-1c') # get the input from Text widget
+        
+        if has_lexical_errors: return # has unknown keywords
+
+        tokens = remove_comment_delims()
+        syntax_analyzer()
 
 def remove_comments(src_code):
-	# remove multiline comments
-	src_code = re.sub(r"(^|\n)( |\t)*OBTW\s*(\s+((?!TLDR).)*)*\n( |\t)*TLDR( |\t)*(?=(\n|$))", r"\nOBTW\nTLDR", src_code) 
-	
-	# remove single line comments
-	src_code = re.sub(r"(^|\s)BTW( |\t)*(( |\t)+.*)?(?=(\n|$))", "\nBTW", src_code)
+        # remove multiline comments
+        src_code = re.sub(r"(^|\n)( |\t)*OBTW\s*(\s+((?!TLDR).)*)*\n( |\t)*TLDR( |\t)*(?=(\n|$))", r"\nOBTW\nTLDR", src_code) 
+        
+        # remove single line comments
+        src_code = re.sub(r"(^|\s)BTW( |\t)*(( |\t)+.*)?(?=(\n|$))", "\nBTW", src_code)
 
-	return src_code
+        return src_code
 
 def remove_whitespaces(src_code):
-	temp = []
+        temp = []
 
-	for line in src_code:
-		line = line.strip() # remove leading and trailing whitespaces
-		if line != "":
-			temp.append(line) # append line only if it is not an empty string
+        for line in src_code:
+                line = line.strip() # remove leading and trailing whitespaces
+                if line != "":
+                        temp.append(line) # append line only if it is not an empty string
 
-	return temp
+        return temp
 
 def findMatch(line):
-	#Literal(0-4)
-	yarn = r"(\")([^\"]*)(\")"
-	numbr = r"-?[0-9]+"
-	numbar = r"-?[0-9]+[\.][0-9]*"
-	troof = r"(WIN|FAIL)"
-	typeLiteral = r"(NUMBR|NUMBAR|YARN|TROOF|NOOB)"
 
-	#String Delimiter(5)
-	strdelimiter = r"['\"]"
-	#Code Delimiter(6-7)
-	hai = r"HAI"
-	kthxbye = r"KTHXBYE"
+        #Literal(0-4)
+        yarn = r"(\")([^\"]*)(\")"
+        numbr = r"-?[0-9]+"
+        numbar = r"-?[0-9]+[\.][0-9]*"
+        troof = r"(WIN|FAIL)"
+        typeLiteral = r"(NUMBR|NUMBAR|YARN|TROOF|NOOB)"
 
-	#Variable Declaration(8)
-	ihasa = r"I[ |\t]+HAS[ |\t]+A"
+        #String Delimiter(5)
+        strdelimiter = r"['\"]"
+        #Code Delimiter(6-7)
+        hai = r"HAI"
+        kthxbye = r"KTHXBYE"
 
-	#Variable Assignment(9)
-	itz = r"ITZ"
+        #Variable Declaration(8)
+        ihasa = r"I[ |\t]+HAS[ |\t]+A"
 
-	#Output Keyword(10)
-	visible = r"VISIBLE"
+        #Variable Assignment(9)
+        itz = r"ITZ"
 
-	#Input Keyword(11)
-	gimmeh = r"GIMMEH"
+        #Output Keyword(10)
+        visible = r"VISIBLE"
 
-	#Assignment Keywords(12)
-	r = r"\bR\b"
-	
-	#Flow Control Keywords(13-27)
-	#If-Else Keywords
-	yarly = r"YA[ |\t]+RLY"
-	nowai = r"NO[ |\t]+WAI"
-	orly = r"O[ |\t]+RLY\?"
-	
-	#Switch-Case Keywords
-	omg = r"OMG"
-	omgwtf = r"OMGWTF"
-	oic = r"OIC"
-	wtf = r"WTF\?"
+        #Input Keyword(11)
+        gimmeh = r"GIMMEH"
 
-	#Loop Keywords
-	uppin = r"UPPIN"
-	nerfin = r"NERFIN"
-	til = r"TIL"
-	wile = r"WILE"
-	imouttayr = r"IM[ |\t]+OUTTA[ |\t]+YR"
-	yr = r"YR"
-	iminyr = r"IM[ |\t]+IN[ |\t]+YR"
-	mebbe = r"MEBBE"
+        #Assignment Keywords(12)
+        r = r"\bR\b"
+        
+        #Flow Control Keywords(13-27)
+        #If-Else Keywords
+        yarly = r"YA[ |\t]+RLY"
+        nowai = r"NO[ |\t]+WAI"
+        orly = r"O[ |\t]+RLY\?"
+        
+        #Switch-Case Keywords
+        omg = r"OMG"
+        omgwtf = r"OMGWTF"
+        oic = r"OIC"
+        wtf = r"WTF\?"
 
-	#Concatenation Keywords(28-29)
-	smoosh = r"SMOOSH"
-	mkay = r"MKAY"
-	
-	#Connector Keywords(30-31)
-	an = r"AN"
-	a = r"\bA\b"
+        #Loop Keywords
+        uppin = r"UPPIN"
+        nerfin = r"NERFIN"
+        til = r"TIL"
+        wile = r"WILE"
+        imouttayr = r"IM[ |\t]+OUTTA[ |\t]+YR"
+        yr = r"YR"
+        iminyr = r"IM[ |\t]+IN[ |\t]+YR"
+        mebbe = r"MEBBE"
 
-	#Comparison Keywords(32-33)
-	bothsaem = r"BOTH[ |\t]+SAEM"
-	diffrint = r"DIFFRINT"
-	
-	#Boolean Keywords(34-39)
-	bothof = r"BOTH[ |\t]+OF"
-	eitherof = r"EITHER[ |\t]+OF"
-	wonof = r"WON[ |\t]+OF"
-	notKey = r"NOT"
-	anyof = r"ANY[ |\t]+OF"
-	allof = r"ALL[ |\t]+OF"
-	
-	#Arithmetic Keywords(40-46)
-	sumof = r"SUM[ |\t]+OF"
-	diffof = r"DIFF[ |\t]+OF"
-	produktof = r"PRODUKT[ |\t]+OF"
-	quoshuntof = r"QUOSHUNT[ |\t]+OF"
-	modof = r"MOD[ |\t]+OF"
-	biggrof = r"BIGGR[ |\t]+OF"
-	smallrof = r"SMALLR[ |\t]+OF"
+        #Concatenation Keywords(28-29)
+        smoosh = r"SMOOSH"
+        mkay = r"MKAY"
+        
+        #Connector Keywords(30-31)
+        an = r"AN"
+        a = r"\bA\b"
 
-	#Comment Delimiter(47-49)
-	btw = r"BTW"
-	obtw = r"OBTW"
-	tldr = r"TLDR"
+        #Comparison Keywords(32-33)
+        bothsaem = r"BOTH[ |\t]+SAEM"
+        diffrint = r"DIFFRINT"
+        
+        #Boolean Keywords(34-39)
+        bothof = r"BOTH[ |\t]+OF"
+        eitherof = r"EITHER[ |\t]+OF"
+        wonof = r"WON[ |\t]+OF"
+        notKey = r"NOT"
+        anyof = r"ANY[ |\t]+OF"
+        allof = r"ALL[ |\t]+OF"
+        
+        #Arithmetic Keywords(40-46)
+        sumof = r"SUM[ |\t]+OF"
+        diffof = r"DIFF[ |\t]+OF"
+        produktof = r"PRODUKT[ |\t]+OF"
+        quoshuntof = r"QUOSHUNT[ |\t]+OF"
+        modof = r"MOD[ |\t]+OF"
+        biggrof = r"BIGGR[ |\t]+OF"
+        smallrof = r"SMALLR[ |\t]+OF"
 
-	#Casting Keywords(50-51)
-	maek = r"MAEK"
-	isnowa = r"IS[ |\t]+NOW[ |\t]+A"
+        #Comment Delimiter(47-49)
+        btw = r"BTW"
+        obtw = r"OBTW"
+        tldr = r"TLDR"
 
-	#Return Keywords(52-53)
-	foundyr = r"FOUND[ |\t]+YR"
-	gtfo = r"GTFO"
+        #Casting Keywords(50-51)
+        maek = r"MAEK"
+        isnowa = r"IS[ |\t]+NOW[ |\t]+A"
 
-	#Calling Keyword(54)
-	iiz = r"I[ |\t]+IZ"
+        #Return Keywords(52-53)
+        foundyr = r"FOUND[ |\t]+YR"
+        gtfo = r"GTFO"
 
-	#Function Delimiter(55-56)
-	howizi = r"HOW[ |\t]+IZ[ |\t]+I"
-	ifusayso = r"IF[ |\t]+U[ |\t]+SAY[ |\t]+SO"
+        #Calling Keyword(54)
+        iiz = r"I[ |\t]+IZ"
 
-	#Variable Identifier(57)
-	identifier = r"[a-zA-Z][a-zA-Z0-9_]*"
+        #Function Delimiter(55-56)
+        howizi = r"HOW[ |\t]+IZ[ |\t]+I"
+        ifusayso = r"IF[ |\t]+U[ |\t]+SAY[ |\t]+SO"
 
-	#Unknown Keyword (58)
-	unknown = r".*?"
+        #Variable Identifier(57)
+        identifier = r"[a-zA-Z][a-zA-Z0-9_]*"
 
-	regEx = [yarn, numbr, numbar, troof, typeLiteral,
-		strdelimiter, hai, kthxbye, ihasa, itz, visible, gimmeh,
-		r, yarly, nowai, orly, omg, omgwtf, oic, wtf, uppin,
-		nerfin, til, wile, imouttayr, yr, iminyr, mebbe,
-		smoosh, mkay, an, a, bothsaem, diffrint, bothof, eitherof, wonof, notKey, anyof, allof,
-		sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof,
-		btw, obtw, tldr, maek, isnowa, foundyr, gtfo, iiz, howizi, ifusayso,
-		identifier, unknown]
+        #Unknown Keyword (58)
+        unknown = r".*?"
 
-	allTokens = []
-	classify = []
+        regEx = [yarn, numbr, numbar, troof, typeLiteral,
+                strdelimiter, hai, kthxbye, ihasa, itz, visible, gimmeh,
+                r, yarly, nowai, orly, omg, omgwtf, oic, wtf, uppin,
+                nerfin, til, wile, imouttayr, yr, iminyr, mebbe,
+                smoosh, mkay, an, a, bothsaem, diffrint, bothof, eitherof, wonof, notKey, anyof, allof,
+                sumof, diffof, produktof, quoshuntof, modof, biggrof, smallrof,
+                btw, obtw, tldr, maek, isnowa, foundyr, gtfo, iiz, howizi, ifusayso,
+                identifier, unknown]
 
-	while line: # we search for tokens until line is empty
-		for index, r in enumerate(regEx):
-			# search for the current r in the line. searches the FRONT of the line.
-			token_regex = r"^"+r+r"(\s+|$)"
-			token = re.search(token_regex, line)
+        allTokens = []
+        classify = []
 
-			if token:
-				# remove the match from the line and remove the spaces
-				unspacedtoken = token.group().strip()
-				line = re.sub(token_regex, "", line)
+        while line: # we search for tokens until line is empty
+                for index, r in enumerate(regEx):
+                        # search for the current r in the line. searches the FRONT of the line.
+                        token_regex = r"^"+r+r"(\s+|$)"
+                        token = re.search(token_regex, line)
 
-				# append to allTokens
-				allTokens.append(unspacedtoken)
+                        if token:
+                                # remove the match from the line and remove the spaces
+                                unspacedtoken = token.group().strip()
+                                line = re.sub(token_regex, "", line)
 
-				#classify token
-				if index == 0:
-					o_delim = token.group(1) # string delimiter
-					string = token.group(2) # actual yarn
-					c_delim = token.group(3) # string delimiter
-					
-					allTokens[-1] = o_delim
-					allTokens.append(string)
-					allTokens.append(c_delim)
+                                # append to allTokens
+                                allTokens.append(unspacedtoken)
 
-					classify.append("String Delimiter")
-					classify.append("Literal")
-					classify.append("String Delimiter")
-				elif index in range(1,3):
-					allTokens[-1] = eval(unspacedtoken)
-					classify.append("Literal")					
-				elif index in range(3,5):
-					classify.append("Literal")
-				# elif index == 5: // check if this is still necessary before deleting
-				# 	classify.append("String Delimiter")
-				elif index in range(6,8):
-					classify.append("Code Delimiter")
-				elif index == 8:
-					classify.append("Variable Declaration")
-				elif index == 9:
-					classify.append("Variable Assignment")
-				elif index == 10:
-					classify.append("Output Keyword")
-				elif index == 11:
-					classify.append("Input Keyword")
-				elif index == 12:
-					classify.append("Assignment Keyword")
-				elif index in range(13,28):
-					classify.append("Flow Control Keyword")
-				elif index in range(28,30):
-					classify.append("Concatenation Keyword")
-				elif index in range(30,32):
-					classify.append("Connector Keyword")
-				elif index in range(32,34):
-					classify.append("Comparison Keyword")
-				elif index in range(34,40):
-					classify.append("Boolean Keyword")
-				elif index in range(40,47):
-					classify.append("Arithmetic Keyword")
-				elif index in range(47,50):
-					classify.append("Comment Delimiter")
-				elif index in range(50,52):
-					classify.append("Casting Keyword")
-				elif index in range(52,54):
-					classify.append("Return Keyword")
-				elif index == 54:
-					classify.append("Calling Keyword")
-				elif index in range(55,57):
-					classify.append("Function Delimiter")
-				elif index == 57:
-					classify.append("Variable Identifier")
-				else:
-					output_console("error::unknown keyword: " + unspacedtoken)
-					classify.append("Unknown Keyword")
+                                #classify token
+                                if index == 0:
+                                        o_delim = token.group(1) # string delimiter
+                                        string = token.group(2) # actual yarn
+                                        c_delim = token.group(3) # string delimiter
+                                        
+                                        allTokens[-1] = o_delim
+                                        allTokens.append(string)
+                                        allTokens.append(c_delim)
 
-				# end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
-				break
+                                        classify.append("String Delimiter")
+                                        classify.append("Literal")
+                                        classify.append("String Delimiter")
+                                elif index in range(1,3):
+                                        allTokens[-1] = eval(unspacedtoken)
+                                        classify.append("Literal")                                      
+                                elif index in range(3,5):
+                                        classify.append("Literal")
+                                # elif index == 5: // check if this is still necessary before deleting
+                                #       classify.append("String Delimiter")
+                                elif index in range(6,8):
+                                        classify.append("Code Delimiter")
+                                elif index == 8:
+                                        classify.append("Variable Declaration")
+                                elif index == 9:
+                                        classify.append("Variable Assignment")
+                                elif index == 10:
+                                        classify.append("Output Keyword")
+                                elif index == 11:
+                                        classify.append("Input Keyword")
+                                elif index == 12:
+                                        classify.append("Assignment Keyword")
+                                elif index in range(13,28):
+                                        classify.append("Flow Control Keyword")
+                                elif index in range(28,30):
+                                        classify.append("Concatenation Keyword")
+                                elif index in range(30,32):
+                                        classify.append("Connector Keyword")
+                                elif index in range(32,34):
+                                        classify.append("Comparison Keyword")
+                                elif index in range(34,40):
+                                        classify.append("Boolean Keyword")
+                                elif index in range(40,47):
+                                        classify.append("Arithmetic Keyword")
+                                elif index in range(47,50):
+                                        classify.append("Comment Delimiter")
+                                elif index in range(50,52):
+                                        classify.append("Casting Keyword")
+                                elif index in range(52,54):
+                                        classify.append("Return Keyword")
+                                elif index == 54:
+                                        classify.append("Calling Keyword")
+                                elif index in range(55,57):
+                                        classify.append("Function Delimiter")
+                                elif index == 57:
+                                        classify.append("Variable Identifier")
+                                else:
+                                        output_console("error::unknown keyword: " + unspacedtoken)
+                                        classify.append("Unknown Keyword")
 
-	return allTokens, classify
+                                # end the loop pag nahanap na, proceed to find the next one so iloloop ulit yung regex
+                                break
+
+        return allTokens, classify
 
 def tokenize(code):
-	global tokens
+        global tokens
 
-	tokens = []
-	classifications = []
+        tokens = []
+        classifications = []
 
-	for line in code: # iterate through every line
-		token, classify = findMatch(line) # get the tokens and their class of each line
-		tokens.append(token)
-		classifications.append(classify)
+        for line in code: # iterate through every line
+                token, classify = findMatch(line) # get the tokens and their class of each line
+                tokens.append(token)
+                classifications.append(classify)
 
-	fill_table(lexemes_table, tokens, classifications) # fill the lexemes table in the GUI
+        fill_table(lexemes_table, tokens, classifications) # fill the lexemes table in the GUI
 
 def fill_table(tree, lhs, rhs):
-	# make sure table is clear
-	for element in tree.get_children():
-		tree.delete(element)
+        # make sure table is clear
+        for element in tree.get_children():
+                tree.delete(element)
 
-	count = 0
+        count = 0
 
-	for i in range(len(lhs)): # per line
-		for j in range(len(lhs[i])): # per token
-			lhs_value = str(lhs[i][j])
-			rhs_value = str(rhs[i][j])
 
-			tree.insert(parent='', index=END, text=count, values=(lhs_value, rhs_value)) # print to GUI
-			count += 1
+        for i in range(len(lhs)): # per line
+                for j in range(len(lhs[i])): # per token
+                        lhs_value = str(lhs[i][j])
+                        rhs_value = str(rhs[i][j])
+
+                        tree.insert(parent='', index=END, text=count, values=(lhs_value, rhs_value)) # print to GUI
+                        count += 1
 
 ##### SYNTAX ANALYZER #####
 
 def find_line(needed_token, start, end):
-	max_length = len(tokens)
-	if start < max_length and end <= max_length:
-		for i in range(start, end):
-			if tokens[i][0]==needed_token: # found the line where token is found
-				return i
-	return -1
+        max_length = len(tokens)
+        if start < max_length and end <= max_length:
+                for i in range(start, end):
+                        if tokens[i][0]==needed_token: # found the line where token is found
+                                return i
+        return -1
 
 def get_line(index):
-	string = ''
+        string = ''
 
-	if index >= len(tokens): # out of bounds
-		return "KTHXBYE"
+        if index >= len(tokens): # out of bounds
+                return "KTHXBYE"
 
-	for word in tokens[index]: # get the whole line as string at line index
-		string += str(word) + ' '
 
-	return string.strip() 
+        for word in tokens[index]: # get the whole line as string at line index
+                string += str(word) + ' '
+
+
+        return string.strip() 
 
 def remove_comment_delims():
-	global tokens
-	length = len(tokens)
-	new_tokens = []
+        global tokens
+        length = len(tokens)
+        new_tokens = []
 
-	for i in range(length):
-		string = get_line(i)
-		if string=="BTW": # single line comment
-			continue
-		elif string=="OBTW" and get_line(i+1)=="TLDR": # opening multi line comment
-			continue
-		elif string=="TLDR" and i-1 >= 0: # closing multi line comment TLDR
-			if get_line(i-1)=="OBTW":
-				continue
-		new_tokens.append(tokens[i])
+        for i in range(length):
+                string = get_line(i)
+                if string=="BTW": # single line comment
+                        continue
+                elif string=="OBTW" and get_line(i+1)=="TLDR": # opening multi line comment
+                        continue
+                elif string=="TLDR" and i-1 >= 0: # closing multi line comment TLDR
+                        if get_line(i-1)=="OBTW":
+                                continue
+                new_tokens.append(tokens[i])
 
-	return new_tokens
+        return new_tokens
 
 def output_console(contents):
-	console["state"] = "normal"
-	console.insert(END, contents) # print contents to GUI
-	console.insert(END, "\n") # print contents to GUI
-	console["state"] = "disabled"
+
+        console["state"] = "normal"
+        console.insert(END, contents) # print contents to GUI
+        console.insert(END, "\n") # print contents to GUI
+        console["state"] = "disabled"
 
 def syntax_analyzer():
-	global tokens
+        global tokens
 
-	if get_line(0)=="HAI": # check if program starts with HAI only
-		i = find_line("KTHXBYE", 0, len(tokens)) # check if there is KTHXBYE
-		
-		if i > -1:
-			tokens = tokens[:i] # exclude everything after the [first] KTHXBYE
-			tokens.pop(0) # exclude everything before the [first] HAI
-			if tokens and parse_comments(): # check for comment errors
-				while line_number < len(tokens): # check the rest of the code
-					if not statement(False):
-						break 
-				fill_table(symbtable_table, [list(symbols.keys())], [list(symbols.values())])
-		else:
-			output_console("error at: " + get_line(i)) # program has no KTHXBYE
-	else: # program does not start with HAI
-		output_console("error at: " + get_line(line_number))
+        if get_line(0)=="HAI": # check if program starts with HAI only
+                i = find_line("KTHXBYE", 0, len(tokens)) # check if there is KTHXBYE
+                
+                if i > -1:
+                        tokens = tokens[:i] # exclude everything after the [first] KTHXBYE
+                        tokens.pop(0) # exclude everything before the [first] HAI
+                        if tokens and parse_comments(): # check for comment errors
+                                while line_number < len(tokens): # check the rest of the code
+                                        if not statement(False):
+                                                break 
+                                fill_table(symbtable_table, [list(symbols.keys())], [list(symbols.values())])
+                else:
+                        output_console("error at: " + get_line(i)) # program has no KTHXBYE
+        else: # program does not start with HAI
+                output_console("error at: " + get_line(line_number))
 
 def parse_comments():
-	for i in range(len(tokens)):
-		line = tokens[i]
-		if ("OBTW" in line) or ("TLDR" in line): # comment error found
-			output_console("error at: " + get_line(i))
-			return False
+        for i in range(len(tokens)):
+                line = tokens[i]
+                if ("OBTW" in line) or ("TLDR" in line): # comment error found
+                        output_console("error at: " + get_line(i))
+                        return False
 
-	return True # no errors in comments
+        return True # no errors in comments
 
 def get_current_token(index):
-	current_line = tokens[line_number]
+        current_line = tokens[line_number]
 
-	if index >= len(current_line):
-		return None
-	else:
-		return current_line[index]
+        if index >= len(current_line):
+                return None
+        else:
+                return current_line[index]
 
 def check_token(needed_token, index):
-	global line_number
+        global line_number
 
-	current_token = get_current_token(index)
+        current_token = get_current_token(index)
 
-	if not current_token: # reached the EOL
-		line_number += 1 
-		return 0
-	elif current_token==needed_token: # correct syntax
-		return index+1
-	else:
-		return -1 # wrong syntax
+        if not current_token: # reached the EOL
+                line_number += 1 
+                return 0
+        elif current_token==needed_token: # correct syntax
+                return index+1
+        else:
+                return -1 # wrong syntax
 
 def statement(is_code_block):
-	# THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
-	global line_number
-	token = get_current_token(0)
 
-	# VARIABLE DECLARATION
-	if token=="I HAS A" and not is_code_block:
-		return i_has_a()
+        # THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
+        global line_number
+        token = get_current_token(0)
 
-	# ARITHMETIC OPERATIONS
-	elif token=="SUM OF":
-		result = (sum_of(tokens[line_number]))
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="DIFF OF":
-		result = diff_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="PRODUKT OF":
-		result = prod_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="QUOSHUNT OF":
-		result = quo_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="MOD OF":
-		result = mod_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="BIGGR OF":
-		result = biggr_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="SMALLR OF":
-		result = smallr_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
+        # VARIABLE DECLARATION
+        if token=="I HAS A" and not is_code_block:
+                return i_has_a()
 
-	# BOOLEAN OPERATIONS
-	elif token=="BOTH OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-	elif token=="EITHER OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-	elif token=="WON OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-	elif token=="NOT":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-	elif token=="ALL OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-	elif token=="ANY OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
+        # ARITHMETIC OPERATIONS
+        elif token=="SUM OF":
+                result = (sum_of(tokens[line_number]))
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="DIFF OF":
+                result = (diff_of(tokens[line_number]))
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="PRODUKT OF":
+                result = prod_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="QUOSHUNT OF":
+                result = quo_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="MOD OF":
+                result = mod_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="BIGGR OF":
+                result = biggr_of(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                        get_value(expression)
+                return result
+        elif token=="SMALLR OF":
+                result = smallr_of(tokens[line_number])
+                line_number += 1
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
 
-	# COMPARISON OPERATIONS
-	elif token=="BOTH SAEM":
-		return both_saem(tokens[line_number])
-	elif token=="DIFFRINT":
-		return diffrint(tokens[line_number])
+        # BOOLEAN OPERATIONS
+        elif token=="BOTH OF":
+                print("yes both of")
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                        eval_troof(expression)
+                return result
+        elif token=="EITHER OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                        eval_troof(expression)
+                return result
+        elif token=="WON OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                        eval_troof(expression)
+                return result
+        elif token=="NOT":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                        eval_troof(expression)
+                return result
+        elif token=="ALL OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                        eval_troof(expression)
+                return result
+        elif token=="ANY OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                        eval_troof(expression)
+                return result
 
-	# CONCATENTATION
-	elif token=="SMOOSH":
-		print("SMOOSH")
+        # COMPARISON OPERATIONS
+        elif token=="BOTH SAEM":
+                return both_saem(tokens[line_number])
+        elif token=="DIFFRINT":
+                return diffrint(tokens[line_number])
 
-	# TYPECAST
-	elif token=="MAEK":
-		if typecast(tokens[line_number], "IT"):
-			line_number += 1
-			return True
+        # CONCATENTATION
+        elif token=="SMOOSH":
+                print("SMOOSH")
 
-	# INPUT/OUTPUT
-	elif token=="VISIBLE":
-		print("VISIBLE")
-	elif token=="GIMMEH":
-		print("GIMMEH")
+        # TYPECAST
+        elif token=="MAEK":
+                if typecast(tokens[line_number], "IT"):
+                        line_number += 1
+                        return True
 
-	# IF-THEN
-	elif token=="O RLY?":
-		return if_then()
+        # INPUT/OUTPUT
+        elif token=="VISIBLE":
+                print("VISIBLE")
+        elif token=="GIMMEH":
+                print("GIMMEH")
 
-	# SWITCH CASE
-	elif token=="WTF?":
-		return switch_case()
+        # IF-THEN
+        elif token=="O RLY?":
+                return if_then()
 
-	# LOOP
-	elif token=="IM IN YR":
-		return loop()
+        # SWITCH CASE
+        elif token=="WTF?":
+                return switch_case()
 
-	# MISUSED KEYWORDS
-	elif token=="GTFO" and is_code_block and in_loop:
-		global is_break
-		is_break = True
-		line_number += 1
-		return True
+        # LOOP
+        elif token=="IM IN YR":
+                return loop()
 
-	elif token=="GTFO" or token=="ITZ" or token=="R" or token=="YA RLY" or token=="NO WAI" or token=="O RLY?" or token=="OMG" or token=="OMGWTF" or token=="OIC" or token=="UPPIN" or token=="NERFIN" or token=="TIL" or token=="WILE" or token=="IM OUTTA YR" or token=="YR" or token=="MEBBE" or token=="MKAY" or token=="AN" or token=="A" or token=="IS NOW A":
-		output_console("error at: " + get_line(line_number))
-		return False
-	
-	else:
-		regex = r"[a-zA-Z][a-zA-Z0-9_]*$"
-		
-		if re.search(regex, token): # [RE]ASSIGNMENTS
-			return assignment()
-		else: # UNKNOWN PATTERN
-			output_console("error at: " + get_line(line_number))
-			return False
+        # MISUSED KEYWORDS
+        elif token=="GTFO" and is_code_block and in_loop:
+                global is_break
+                is_break = True
+                line_number += 1
+                return True
 
-	line_number += 1
-	return True
+        elif token=="GTFO" or token=="ITZ" or token=="R" or token=="YA RLY" or token=="NO WAI" or token=="O RLY?" or token=="OMG" or token=="OMGWTF" or token=="OIC" or token=="UPPIN" or token=="NERFIN" or token=="TIL" or token=="WILE" or token=="IM OUTTA YR" or token=="YR" or token=="MEBBE" or token=="MKAY" or token=="AN" or token=="A" or token=="IS NOW A":
+                output_console("error at: " + get_line(line_number))
+                return False
+        
+        else:
+                regex = r"[a-zA-Z][a-zA-Z0-9_]*$"
+                
+                if re.search(regex, token): # [RE]ASSIGNMENTS
+                        return assignment()
+                else: # UNKNOWN PATTERN
+                        output_console("error at: " + get_line(line_number))
+                        return False
+
+        line_number += 1
+        return True
 
 def is_numeric(token):
-	return token.replace('.','',1).replace('-','',1).isdigit()
+        return token.replace('.','',1).replace('-','',1).isdigit()
 
 def is_literal(token):
-	# NUMBR, NUMBAR, YARN, TROOF
-	if token=='"':
-		return "YARN"
-	elif type(token)==int:
-		return "NUMBR"
-	elif type(token)==float:
-		return "NUMBAR"
-	elif token in ["WIN", "FAIL"]:
-		return "TROOF"
-	elif token=="NOOB":
-		return token
+        # NUMBR, NUMBAR, YARN, TROOF
+        if token=='"':
+                return "YARN"
+        elif type(token)==int:
+                return "NUMBR"
+        elif type(token)==float:
+                return "NUMBAR"
+        elif token in ["WIN", "FAIL"]:
+                return "TROOF"
+        elif token=="NOOB":
+                return token
 
-	return False
+        return False
 
 def is_valid_identifier(token):
-	# no keywords must be used as identifiers
-	regex = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*$")
-	keywords = ["WIN", "FAIL", "NUMBR", "NUMBAR", "YARN", "TROOF", "NOOB", "HAI", "KTHXBYE", "I HAS A", "ITZ", "VISIBLE", "GIMMEH", "R", "YA RLY", "NO WAI", "O RLY?", "OMG", "OMGWTF", "OIC", "WTF?", "UPPIN", "NERFIN", "TIL", "WILE", "IM OUTTA YR", "YR", "IM IN YR", "MEBBE", "SMOOSH", "MKAY", "AN", "A", "BOTH SAEM", "DIFFRINT", "BOTH OF", "EITHER OF", "WON OF", "NOT", "ANY OF", "ALL OF", "SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BTW", "OBTW", "TLDR", "MAEK", "IS NOW A", "FOUND YR", "GTFO","I IZ","HOW IZ I" ,"IF U SAY SO"]
+        # no keywords must be used as identifiers
+        regex = re.compile(r"[a-zA-Z][a-zA-Z0-9_]*$")
+        keywords = ["WIN", "FAIL", "NUMBR", "NUMBAR", "YARN", "TROOF", "NOOB", "HAI", "KTHXBYE", "I HAS A", "ITZ", "VISIBLE", "GIMMEH", "R", "YA RLY", "NO WAI", "O RLY?", "OMG", "OMGWTF", "OIC", "WTF?", "UPPIN", "NERFIN", "TIL", "WILE", "IM OUTTA YR", "YR", "IM IN YR", "MEBBE", "SMOOSH", "MKAY", "AN", "A", "BOTH SAEM", "DIFFRINT", "BOTH OF", "EITHER OF", "WON OF", "NOT", "ANY OF", "ALL OF", "SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BTW", "OBTW", "TLDR", "MAEK", "IS NOW A", "FOUND YR", "GTFO","I IZ","HOW IZ I" ,"IF U SAY SO"]
 
-	if not regex.search(token) or token in keywords:
-		return False
+        if not regex.search(token) or token in keywords:
+                return False
 
-	return True
+        return True
 
 def eval_expr(token_list):
-	if len(token_list) < 2:
-		return False
-	
-	token = token_list[0]
+        global line_number
+        if len(token_list) < 2:
+                return False
+        
+        token = token_list[0]
 
-	# ARITHMETIC OPERATIONS
-	if token=="SUM OF":
-		result = (sum_of(tokens[line_number]))
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
-	elif token=="DIFF OF":
-		result = diff_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
-	elif token=="PRODUKT OF":
-		result = prod_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
-	elif token=="QUOSHUNT OF":
-		result = quo_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
-	elif token=="MOD OF":
-		result = mod_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
-	elif token=="BIGGR OF":
-		result = biggr_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
-	elif token=="SMALLR OF":
-		result = smallr_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
+        # ARITHMETIC OPERATIONS
+        if token=="SUM OF":
+                result = (sum_of(tokens[line_number]))
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="DIFF OF":
+                result = diff_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="PRODUKT OF":
+                result = prod_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="QUOSHUNT OF":
+                result = quo_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="MOD OF":
+                result = mod_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="BIGGR OF":
+                result = biggr_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
+        elif token=="SMALLR OF":
+                result = smallr_of(tokens[line_number])
+                current_line = get_line(line_number)
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                get_value(expression)
+                else:
+                        output_console("error at: " + current_line)
+                return result
 
-	# BOOLEAN OPERATIONS
-	elif token=="BOTH OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
-	elif token=="EITHER OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
-	elif token=="WON OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
-	elif token=="NOT":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
-	elif token=="ALL OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
-	elif token=="ANY OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
+        # BOOLEAN OPERATIONS
+        elif token=="BOTH OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+        elif token=="EITHER OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+        elif token=="WON OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+        elif token=="NOT":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+        elif token=="ALL OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
+        elif token=="ANY OF":
+                result = bool_op(tokens[line_number])
+                line_number += 1
+                if result: #if syntactically correct, solve
+                                eval_troof(expression)
+                return result
 
-	# COMPARISON OPERATIONS
-	elif token=="BOTH SAEM":
-		return both_saem(tokens[line_number])
-	elif token=="DIFFRINT":
-		return diffrint(tokens[line_number])
+        # COMPARISON OPERATIONS
+        elif token=="BOTH SAEM":
+                return both_saem(tokens[line_number])
+        elif token=="DIFFRINT":
+                return diffrint(tokens[line_number])
 
-	return True
+        return True
 
 ###START OF OPERATIONS####
 
 #FUNCTIONS FOR ARITHMETIC OPERATIONS
 def get_value(listOp):
-	global symbols
-	listOp = listOp[::-1]
-	   
-	final_expr = "("
-	for index, element in enumerate(listOp):
-		if element == "max":
-			final_expr = "max" + final_expr +"," + str(listOp[index+1]) +")"
-			del listOp[index+1]
-		elif element == "min":
-			final_expr = "min" + final_expr +"," + str(listOp[index+1]) +")"
-			del listOp[index+1]
-		elif index in range(0,3):
-			final_expr = final_expr + str(element)
-		elif index == 3:
-			final_expr = final_expr + ")" + str(element)
-		elif (index % 2) == 0:
-			final_expr = "(" + final_expr + str(element) + ")"
-		else:
-			final_expr = final_expr + str(element)
-	if (len(listOp)) == 3:
-		final_expr = final_expr + ")"
-	   
-	result = (eval(final_expr)) #return computed value
-	symbols["IT"] = result
-	
+
+        global symbols, expression 
+        listOp = listOp[::-1]
+           
+        final_expr = "("
+        for index, element in enumerate(listOp):
+                if element == "max":
+                        final_expr = "max" + final_expr +"," + str(listOp[index+1]) +")"
+                        del listOp[index+1]
+                elif element == "min":
+                        final_expr = "min" + final_expr +"," + str(listOp[index+1]) +")"
+                        del listOp[index+1]
+                elif index in range(0,3):
+                        final_expr = final_expr + str(element)
+                elif index == 3:
+                        final_expr = final_expr + ")" + str(element)
+                elif (index % 2) == 0:
+                        final_expr = "(" + final_expr + str(element) + ")"
+                else:
+                        final_expr = final_expr + str(element)
+        if (len(listOp)) == 3:
+                final_expr = final_expr + ")"
+           
+        result = (eval(final_expr)) #return computed value
+        expression = []
+        symbols["IT"] = result
+        
 def check_digit(token):
-	global expr 
-	is_valid = False
-	if type(token)==int: #check if numbr:
-		expr = token
-		is_valid = True
-	elif type(token)==float: #check if numbar:
-		expr = token
-		is_valid = True
-	elif is_valid_identifier(token): #if identifier check if value is numbr/numbar
-		if token in symbols.keys():
-			if symbols[token].isnumeric():
-				expr = symbols[token]
-				is_valid = True
-	#elif typecast(line[-1]): # check if typecasting is valid
-		#is_valid = True
-	return is_valid
+        global expr 
+        is_valid = False
+        if type(token)==int: #check if numbr:
+                expr = token
+                is_valid = True
+        elif type(token)==float: #check if numbar:
+                expr = token
+                is_valid = True
+        elif is_valid_identifier(token): #if identifier check if value is numbr/numbar
+                if token in symbols.keys():
+                        if symbols[token].isnumeric():
+                                expr = symbols[token]
+                                is_valid = True
+        #elif typecast(line[-1]): # check if typecasting is valid
+                #is_valid = True
+        return is_valid
 
 def check_implicit(line):
-	if (line[0] == '"' or line[0] == "'") and (line[-1] == '"' or line[-1] == "'"):
-		del line[0]
-		del line[-1]
-		if len(line) == 1:
-			return check_digit(line[0])
-		else:
-			return False
-	else:
-		return False
-	
+        if (line[0] == '"' or line[0] == "'") and (line[-1] == '"' or line[-1] == "'"):
+                del line[0]
+                del line[-1]
+                if len(line) == 1:
+                        return check_digit(line[0])
+                else:
+                        return False
+        else:
+                return False
+        
 def next_op(line):
-
-	if line == []:
-		return True
-	elif line[0] == "SUM OF":
-		return sum_of(line)
-	elif line[0] == "DIFF OF":
-		return diff_of(line)
-	elif line[0] == "PRODUKT OF":
-		return prod_of(line)
-	elif line[0] == "QUOSHUNT OF":
-		return quo_of(line)
-	elif line[0] == "MOD OF":
-		return mod_of(line)
-	elif line[0] == "BIGGR OF":
-		return biggr_of(line)
-	elif line[0] == "SMALLR OF":
-		return smallr_of(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        print(line)
+        if line == []:
+                return True
+        elif line[0] == "SUM OF":
+                return sum_of(line)
+        elif line[0] == "DIFF OF":
+                return diff_of(line)
+        elif line[0] == "PRODUKT OF":
+                return prod_of(line)
+        elif line[0] == "QUOSHUNT OF":
+                return quo_of(line)
+        elif line[0] == "MOD OF":
+                return mod_of(line)
+        elif line[0] == "BIGGR OF":
+                return biggr_of(line)
+        elif line[0] == "SMALLR OF":
+                return smallr_of(line)
+        else:
+                return False
 
 def check_nested(line):
-	global expression
-	if line[-1] == "AN":
-		del line[-1]
-		del line[0]
-		if (len(line)==1):
-			expression.append(line[-1])
-			return check_digit(line[-1])
-		elif (len(line)==3):
-			expression.append(line[1])
-			return check_implicit(line)
-		else:
-			return next_op(line)
-				
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        global expression, line_number
+        result = False
+        if line[-1] == "AN":
+                del line[-1]
+                del line[0]
+                if (len(line)==1):
+                        expression.append(line[-1])
+                        return check_digit(line[-1])
+                elif (len(line)==3):
+                        expression.append(line[1])
+                        return check_implicit(line)
+                else:
+                        return next_op(line)
+        
 
 def sum_of(line):
-	global expression, expr
-
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("+")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("+")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        global expression, expr, line_number
+        if check_digit(line[-1]):
+                del line[-1]
+                expression.append(expr)
+                expression.append("+")
+                return check_nested(line)
+        elif check_implicit(line[-3:]):
+                del line[-3:]
+                expression.append(expr)
+                expression.append("+")
+                return check_nested(line)
+        else:
+                return False
 
 def diff_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("-")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("-")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-	
+        if check_digit(line[-1]):
+                del line[-1]
+                expression.append(expr)
+                expression.append("-")
+                return check_nested(line)
+        elif check_implicit(line[-3:]):
+                del line[-3:]
+                expression.append(expr)
+                expression.append("-")
+                return check_nested(line)
+        else:
+                return False
+        
 def prod_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("*")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("*")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        if check_digit(line[-1]):
+                del line[-1]
+                expression.append(expr)
+                expression.append("*")
+                return check_nested(line)
+        elif check_implicit(line[-3:]):
+                del line[-3:]
+                expression.append(expr)
+                expression.append("*")
+                return check_nested(line)
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
 
 def quo_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("/")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("/")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        if check_digit(line[-1]):
+                del line[-1]
+                expression.append(expr)
+                expression.append("/")
+                return check_nested(line)
+        elif check_implicit(line[-3:]):
+                del line[-3:]
+                expression.append(expr)
+                expression.append("/")
+                return check_nested(line)
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
 
 def mod_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("%")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("%")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        if check_digit(line[-1]):
+                del line[-1]
+                expression.append(expr)
+                expression.append("%")
+                return check_nested(line)
+        elif check_implicit(line[-3:]):
+                del line[-3:]
+                expression.append(expr)
+                expression.append("%")
+                return check_nested(line)
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
 
 def biggr_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		return check_nested(line)
-		expression.append(expr)
-		expression.append("max")
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("max")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        if check_digit(line[-1]):
+                del line[-1]
+                return check_nested(line)
+                expression.append(expr)
+                expression.append("max")
+        elif check_implicit(line[-3:]):
+                del line[-3:]
+                expression.append(expr)
+                expression.append("max")
+                return check_nested(line)
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
 
 def smallr_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("min")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("min")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        if check_digit(line[-1]):
+                del line[-1]
+                expression.append(expr)
+                expression.append("min")
+                return check_nested(line)
+        elif check_implicit(line[-3:]):
+                del line[-3:]
+                expression.append(expr)
+                expression.append("min")
+                return check_nested(line)
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
 
 #FUNCTIONS FOR BOOLEAN OPERATORS
-def eval_troof(expression):
-	global symbols
-	final_expr = ""
-	for index, element in enumerate(expression):
-		if element == "WIN":
-			expression[index] = "True"
-		elif element == "FAIL":
-			expression[index] = "False"
-			
-	for index, element in enumerate(expression):
-		if element == "not ":
-			final_expr = element + final_expr
-		else:
-			final_expr = final_expr + element 
+def eval_troof(expr):
+        global symbols, expression
+        final_expr = ""
+        for index, element in enumerate(expr):
+                if element == "WIN":
+                        expr[index] = "True"
+                elif element == "FAIL":
+                        expr[index] = "False"
+                        
+        for index, element in enumerate(expr):
+                if element == "not ":
+                        final_expr = element + final_expr
+                else:
+                        final_expr = final_expr + element 
 
-	result = (eval(final_expr))
-	
-	if result == True:
-		result = "WIN"
-	else:
-		result = "FAIL"
+        result = (eval(final_expr))
+        expression = []
+        if result == True:
+                result = "WIN"
+        else:
+                result = "FAIL"
 
-	symbols["IT"] = result
-		
+        symbols["IT"] = result
+                
 def check_troof(token):
-	is_valid = False
-	global troof
-	
-	if (bool(re.match(r"(WIN|FAIL)", token))): #check if troof:
-		troof = token
-		is_valid = True
-	elif (bool(re.match(r"[a-zA-Z][a-zA-Z0-9_]*", token))): #if identifier check if value is numbr/numbar
-		if token in symbols.keys():
-			if (bool(re.matched(r"(WIN|FAIL)",symbols[token]))):
-				troof = symbols[token]
-				is_valid = True
-	#elif typecast(line[-1]): # check if implicit typecasting is valid
-		#is_valid = True
-	return is_valid
+        is_valid = False
+        global troof
+        
+        if (bool(re.match(r"(WIN|FAIL)", token))): #check if troof:
+                troof = token
+                is_valid = True
+        elif (bool(re.match(r"[a-zA-Z][a-zA-Z0-9_]*", token))): #if identifier check if value is numbr/numbar
+                if token in symbols.keys():
+                        if (bool(re.matched(r"(WIN|FAIL)",symbols[token]))):
+                                troof = symbols[token]
+                                is_valid = True
+        #elif typecast(line[-1]): # check if implicit typecasting is valid
+                #is_valid = True
+        return is_valid
 
 def next_op_allany(line, operation):
 
-	global expression, troof
+        global expression, troof
 
-	if line[0] == "NOT":
-		del line[0]
-		expression.append("not ")
-		if check_troof(line[0]):
-			expression.append(troof)
-			del line[0]
-			if line and line[0] == "AN":
-				del line[0]
-				if line == []:
-					return True
-				else:
-					expression.append(operation)
-					return next_op_allany(line, operation)
-			elif line == []:
-				return True
-			
-	elif line[0] == 'BOTH OF' or line[0] == 'EITHER OF' or line[0] == 'WON OF':
-		if check_troof(line[1]):
-			expression.append(troof)
-			del line[1]
-			if line[0] == 'BOTH OF':
-				expression.append(" and ")
-			elif line[0] == 'EITHER OF':
-				expression.append(" or ")
-			elif line[0] == 'WON OF':
-				expression.append(" ^ ")
-			else:
-				return False
-			del line[0]
-			if line[0] == "AN":
-				del line[0]
-				if check_troof(line[0]):
-					expression.append(troof)
-					del line[0]
-					if line and line[0] == "AN":
-						expression.append(operation)
-						del line[0]
-						if line == []:
-							return True
-						else:
-							return next_op_allany(line, operation)
-					elif line == []:
-						return True
-					else:
-						return False
-				else:
-					return False
-			else:
-				return False
-		else:
-			return False
-	else:
-		return False
-	
+        if line[0] == "NOT":
+                del line[0]
+                expression.append("not ")
+                if check_troof(line[0]):
+                        expression.append(troof)
+                        del line[0]
+                        if line and line[0] == "AN":
+                                del line[0]
+                                if line == []:
+                                        return True
+                                else:
+                                        expression.append(operation)
+                                        return next_op_allany(line, operation)
+                        elif line == []:
+                                return True
+                        
+        elif line[0] == 'BOTH OF' or line[0] == 'EITHER OF' or line[0] == 'WON OF':
+                if check_troof(line[1]):
+                        expression.append(troof)
+                        del line[1]
+                        if line[0] == 'BOTH OF':
+                                expression.append(" and ")
+                        elif line[0] == 'EITHER OF':
+                                expression.append(" or ")
+                        elif line[0] == 'WON OF':
+                                expression.append(" ^ ")
+                        else:
+                                return False
+                        del line[0]
+                        if line[0] == "AN":
+                                del line[0]
+                                if check_troof(line[0]):
+                                        expression.append(troof)
+                                        del line[0]
+                                        if line and line[0] == "AN":
+                                                expression.append(operation)
+                                                del line[0]
+                                                if line == []:
+                                                        return True
+                                                else:
+                                                        return next_op_allany(line, operation)
+                                        elif line == []:
+                                                return True
+                                        else:
+                                                return False
+                                else:
+                                        return False
+                        else:
+                                return False
+                else:
+                        return False
+        else:
+                return False
+        
 def allany_of(line):
-	global expression, troof
-
-	if line[0] == "NOT":
-		del line[0]
-		expression.append("not ")
-		if check_troof(line[0]):
-			expression.append(troof)
-			del line[0]
-			if line and line[0] == "AN":
-				del line[0]
-				if line == []:
-					return True
-				else:
-					allany_of(line)
-			elif line == []:
-				return True
-			
-	elif line[0] == 'BOTH OF' or line[0] == 'EITHER OF' or line[0] == 'WON OF':
-		if check_troof(line[1]):
-			expression.append(troof)
-			del line[1]
-			if line[0] == 'BOTH OF':
-				expression.append(" and ")
-			elif line[0] == 'EITHER OF':
-				expression.append(" or ")
-			elif line[0] == 'WON OF':
-				expression.append(" ^ ")
-			elif line[0] == 'ALL OF' and line[-1] == 'MKAY':
-				del line[0]
-				del line[-1]
-				return next_op_allany(line, ' and ')
-			elif line[0] == 'ANY OF' and line[-1] == 'MKAY':
-				del line[0]
-				del line[-1]
-				return next_op_allany(line, ' or ')
-			else:
-				return False
-			del line[0]
-			if line[0] == "AN":
-				del line[0]
-				if check_troof(line[0]):
-					expression.append(troof)
-					del line[0]
-					if line and line[0] == "AN":
-						del line[0]
-						if line == []:
-							return True
-						else:
-							return allany_of(line)
-					elif line == []:
-						return True
-					else:
-						return False
-				else:
-					return False
-			else:
-				return False
-		else:
-			return False
-	else:
-		return False
-	
+        global expression, troof, line_number
+        print("expr")
+        if line[0] == "NOT":
+                del line[0]
+                expression.append("not ")
+                if check_troof(line[0]):
+                        expression.append(troof)
+                        del line[0]
+                        if line and line[0] == "AN":
+                                del line[0]
+                                if line == []:
+                                        return True
+                                else:
+                                        allany_of(line)
+                        elif line == []:
+                                return True
+                        
+        elif line[0] == 'BOTH OF' or line[0] == 'EITHER OF' or line[0] == 'WON OF':
+                if check_troof(line[1]):
+                        expression.append(troof)
+                        del line[1]
+                        if line[0] == 'BOTH OF':
+                                expression.append(" and ")
+                        elif line[0] == 'EITHER OF':
+                                expression.append(" or ")
+                        elif line[0] == 'WON OF':
+                                expression.append(" ^ ")
+                        elif line[0] == 'ALL OF' and line[-1] == 'MKAY':
+                                del line[0]
+                                del line[-1]
+                                return next_op_allany(line, ' and ')
+                        elif line[0] == 'ANY OF' and line[-1] == 'MKAY':
+                                del line[0]
+                                del line[-1]
+                                return next_op_allany(line, ' or ')
+                        else:
+                                output_console("error at: " + get_line(line_number))
+                                return False
+                        del line[0]
+                        if line[0] == "AN":
+                                del line[0]
+                                if check_troof(line[0]):
+                                        expression.append(troof)
+                                        del line[0]
+                                        if line and line[0] == "AN":
+                                                del line[0]
+                                                if line == []:
+                                                        return True
+                                                else:
+                                                        return allany_of(line)
+                                        elif line == []:
+                                                return True
+                                        else:
+                                                return False
+                                else:
+                                        return False
+                        else:
+                                return False
+                else:
+                        return False
+        else:
+                return False
+        
 def bool_op(line):
-	global expression
-	if line[0] == "ALL OF" and line[-1] == "MKAY":
-		del line[0]
-		del line[-1]
-		result = next_op_allany(line, " and ")
-	elif line[0] == 'ANY OF' and line[-1] == 'MKAY':
-		del line[0]
-		del line[-1]
-		result = next_op_allany(line, " or ")
-	elif line[-1] != 'MKAY':
-		result = allany_of(line)
-	else:
-		result = False
+        global expression, line_number
+        if line[0] == "ALL OF" and line[-1] == "MKAY":
+                del line[0]
+                del line[-1]
+                result = next_op_allany(line, " and ")
+        elif line[0] == 'ANY OF' and line[-1] == 'MKAY':
+                del line[0]
+                del line[-1]
+                result = next_op_allany(line, " or ")
+        elif line[-1] != 'MKAY':
+                result = allany_of(line)
+        else:
+                result = False
 
-	if result == False:
-		output_console("error at: " + get_line(line_number))
-	return result
+        if result == False:
+                output_console("error at: " + get_line(line_number))
+        return result
 
 #FUNCTIONS FOR COMPARISON OPERATIONS
 def valid_number(token):
-	global next_num
-	if token.isnumeric():
-		next_num = token
-		return True
-	elif token in symbols:
-		if symbols[token].isnumeric():
-			next_num = symbols[token]
-			return True
-	return False
+        global next_num
+        if token.isnumeric():
+                next_num = token
+                return True
+        elif token in symbols:
+                if symbols[token].isnumeric():
+                        next_num = symbols[token]
+                        return True
+        return False
 
 def both_saem(line):
-	global next_num, line_number
-	line_number += 1
-	if line[0] == "BOTH SAEM":
-		del line[0]
-		if valid_number(line[0]):
-			first_digit = next_num
-			del line[0]
-			if line[0] == "AN":
-				del line[0]
-				if valid_number(line[0]):
-					second_digit = next_num
-					del line[0]
-					if line == []:
-						result = (first_digit  == second_digit)
-						if result:
-							symbols["IT"] = "WIN"
-							return True
-						else:
-							symbols["IT"] = "FAIL"
-							return True
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				elif line[0] == "BIGGR OF":
-					del line[0]
-					if line[0] == first_digit:
-						del line[0]
-						if line[0] == "AN":
-							del line[0]
-							if valid_number(line[0]):
-								second_digit = next_num
-								del line[0]
-								if line == []:
-									result = (first_digit  >= second_digit)
-									if result:
-										symbols["IT"] = "WIN"
-										return True
-									else:
-										symbols["IT"] = "FAIL"
-										return True
-					
-								else:
-									output_console("error at: " + get_line(line_number))
-									return False
-							else:
-								output_console("error at: " + get_line(line_number))
-								return False
-						else:
-							output_console("error at: " + get_line(line_number))
-							return False
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				elif line[0] == "SMALLR OF":
-					del line[0]
-					if line[0] == first_digit:
-						del line[0]
-						if line[0] == "AN":
-							del line[0]
-							if valid_number(line[0]):
-								second_digit = next_num
-								del line[0]
-								if line == []:
-									result = (first_digit  <= second_digit)
-									if result:
-										symbols["IT"] = "WIN"
-										return True
-									else:
-										symbols["IT"] = "FAIL"
-										return True
-					
-								else:
-									output_console("error at: " + get_line(line_number))
-									return False
-							else:
-								output_console("error at: " + get_line(line_number))
-								return False
-						else:
-							output_console("error at: " + get_line(line_number))
-							return False
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				else:
-					output_console("error at: " + get_line(line_number))
-					return False
-			else:
-				output_console("error at: " + get_line(line_number))
-				return False
-		else:
-			output_console("error at: " + get_line(line_number))
-			return False
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        global next_num, line_number
+        line_number += 1
+        if line[0] == "BOTH SAEM":
+                del line[0]
+                if valid_number(line[0]):
+                        first_digit = next_num
+                        del line[0]
+                        if line[0] == "AN":
+                                del line[0]
+                                if valid_number(line[0]):
+                                        second_digit = next_num
+                                        del line[0]
+                                        if line == []:
+                                                result = (first_digit  == second_digit)
+                                                if result:
+                                                        symbols["IT"] = "WIN"
+                                                        return True
+                                                else:
+                                                        symbols["IT"] = "FAIL"
+                                                        return True
+                                        else:
+                                                output_console("error at: " + get_line(line_number))
+                                                return False
+                                elif line[0] == "BIGGR OF":
+                                        del line[0]
+                                        if line[0] == first_digit:
+                                                del line[0]
+                                                if line[0] == "AN":
+                                                        del line[0]
+                                                        if valid_number(line[0]):
+                                                                second_digit = next_num
+                                                                del line[0]
+                                                                if line == []:
+                                                                        result = (first_digit  >= second_digit)
+                                                                        if result:
+                                                                                symbols["IT"] = "WIN"
+                                                                                return True
+                                                                        else:
+                                                                                symbols["IT"] = "FAIL"
+                                                                                return True
+                                        
+                                                                else:
+                                                                        output_console("error at: " + get_line(line_number))
+                                                                        return False
+                                                        else:
+                                                                output_console("error at: " + get_line(line_number))
+                                                                return False
+                                                else:
+                                                        output_console("error at: " + get_line(line_number))
+                                                        return False
+                                        else:
+                                                output_console("error at: " + get_line(line_number))
+                                                return False
+                                elif line[0] == "SMALLR OF":
+                                        del line[0]
+                                        if line[0] == first_digit:
+                                                del line[0]
+                                                if line[0] == "AN":
+                                                        del line[0]
+                                                        if valid_number(line[0]):
+                                                                second_digit = next_num
+                                                                del line[0]
+                                                                if line == []:
+                                                                        result = (first_digit  <= second_digit)
+                                                                        if result:
+                                                                                symbols["IT"] = "WIN"
+                                                                                return True
+                                                                        else:
+                                                                                symbols["IT"] = "FAIL"
+                                                                                return True
+                                        
+                                                                else:
+                                                                        output_console("error at: " + get_line(line_number))
+                                                                        return False
+                                                        else:
+                                                                output_console("error at: " + get_line(line_number))
+                                                                return False
+                                                else:
+                                                        output_console("error at: " + get_line(line_number))
+                                                        return False
+                                        else:
+                                                output_console("error at: " + get_line(line_number))
+                                                return False
+                                else:
+                                        output_console("error at: " + get_line(line_number))
+                                        return False
+                        else:
+                                output_console("error at: " + get_line(line_number))
+                                return False
+                else:
+                        output_console("error at: " + get_line(line_number))
+                        return False
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
 
 def diffrint(line):
-	global next_num, line_number
-	line_number += 1
-	if line[0] == "DIFFRINT":
-		del line[0]
-		if valid_number(line[0]):
-			first_digit = next_num
-			del line[0]
-			if line[0] == "AN":
-				del line[0]
-				if valid_number(line[0]):
-					second_digit = next_num
-					del line[0]
-					if line == []:
-						result = (first_digit  != second_digit)
-						if result:
-							symbols["IT"] = "WIN"
-							return True
-						else:
-							symbols["IT"] = "FAIL"
-							return True
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				elif line[0] == "BIGGR OF":
-					del line[0]
-					if line[0] == first_digit:
-						del line[0]
-						if line[0] == "AN":
-							del line[0]
-							if valid_number(line[0]):
-								second_digit = next_num
-								del line[0]
-								if line == []:
-									result = (first_digit  > second_digit)
-									if result:
-										symbols["IT"] = "WIN"
-										return True
-									else:
-										symbols["IT"] = "FAIL"
-										return True
-					
-								else:
-									output_console("error at: " + get_line(line_number))
-									return False
-							else:
-								output_console("error at: " + get_line(line_number))
-								return False
-						else:
-							output_console("error at: " + get_line(line_number))
-							return False
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				elif line[0] == "SMALLR OF":
-					del line[0]
-					if line[0] == first_digit:
-						del line[0]
-						if line[0] == "AN":
-							del line[0]
-							if valid_number(line[0]):
-								second_digit = next_num
-								del line[0]
-								if line == []:
-									result = (first_digit  < second_digit)
-									if result:
-										symbols["IT"] = "WIN"
-										return True
-									else:
-										symbols["IT"] = "FAIL"
-										return True
-					
-								else:
-									output_console("error at: " + get_line(line_number))
-									return False
-							else:
-								output_console("error at: " + get_line(line_number))
-								return False
-						else:
-							output_console("error at: " + get_line(line_number))
-							return False
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				else:
-					output_console("error at: " + get_line(line_number))
-					return False
-			else:
-				output_console("error at: " + get_line(line_number))
-				return False
-		else:
-			output_console("error at: " + get_line(line_number))
-			return False
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-	
+        global next_num, line_number
+        line_number += 1
+        if line[0] == "DIFFRINT":
+                del line[0]
+                if valid_number(line[0]):
+                        first_digit = next_num
+                        del line[0]
+                        if line[0] == "AN":
+                                del line[0]
+                                if valid_number(line[0]):
+                                        second_digit = next_num
+                                        del line[0]
+                                        if line == []:
+                                                result = (first_digit  != second_digit)
+                                                if result:
+                                                        symbols["IT"] = "WIN"
+                                                        return True
+                                                else:
+                                                        symbols["IT"] = "FAIL"
+                                                        return True
+                                        else:
+                                                output_console("error at: " + get_line(line_number))
+                                                return False
+                                elif line[0] == "BIGGR OF":
+                                        del line[0]
+                                        if line[0] == first_digit:
+                                                del line[0]
+                                                if line[0] == "AN":
+                                                        del line[0]
+                                                        if valid_number(line[0]):
+                                                                second_digit = next_num
+                                                                del line[0]
+                                                                if line == []:
+                                                                        result = (first_digit  > second_digit)
+                                                                        if result:
+                                                                                symbols["IT"] = "WIN"
+                                                                                return True
+                                                                        else:
+                                                                                symbols["IT"] = "FAIL"
+                                                                                return True
+                                        
+                                                                else:
+                                                                        output_console("error at: " + get_line(line_number))
+                                                                        return False
+                                                        else:
+                                                                output_console("error at: " + get_line(line_number))
+                                                                return False
+                                                else:
+                                                        output_console("error at: " + get_line(line_number))
+                                                        return False
+                                        else:
+                                                output_console("error at: " + get_line(line_number))
+                                                return False
+                                elif line[0] == "SMALLR OF":
+                                        del line[0]
+                                        if line[0] == first_digit:
+                                                del line[0]
+                                                if line[0] == "AN":
+                                                        del line[0]
+                                                        if valid_number(line[0]):
+                                                                second_digit = next_num
+                                                                del line[0]
+                                                                if line == []:
+                                                                        result = (first_digit  < second_digit)
+                                                                        if result:
+                                                                                symbols["IT"] = "WIN"
+                                                                                return True
+                                                                        else:
+                                                                                symbols["IT"] = "FAIL"
+                                                                                return True
+                                        
+                                                                else:
+                                                                        output_console("error at: " + get_line(line_number))
+                                                                        return False
+                                                        else:
+                                                                output_console("error at: " + get_line(line_number))
+                                                                return False
+                                                else:
+                                                        output_console("error at: " + get_line(line_number))
+                                                        return False
+                                        else:
+                                                output_console("error at: " + get_line(line_number))
+                                                return False
+                                else:
+                                        output_console("error at: " + get_line(line_number))
+                                        return False
+                        else:
+                                output_console("error at: " + get_line(line_number))
+                                return False
+                else:
+                        output_console("error at: " + get_line(line_number))
+                        return False
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
+        
+
 def find_end_block(needed_token, incrementor, start, end):
-	max_length = len(tokens)
-	if start >= max_length and end >= max_length:
-		return -1
+        max_length = len(tokens)
+        if start >= max_length and end >= max_length:
+                return -1
 
-	count = 1
-	for i in range(start, end):
-		token = tokens[i][0]
-		if token==needed_token:
-			count -= 1
-		elif token in incrementor:
-			count += 1
+        count = 1
+        for i in range(start, end):
+                token = tokens[i][0]
+                if token==needed_token:
+                        count -= 1
+                elif token in incrementor:
+                        count += 1
 
-		if count==0:
-			return i
-	return -1
+                if count==0:
+                        return i
+        return -1
 
 ###END OF OPERATIONS###
 
 def i_has_a():
-	global line_number
-	line = tokens[line_number]
-	length = len(line)
+        global line_number
+        line = tokens[line_number]
+        length = len(line)
 
-	if length < 2:
-		output_console("error::unexpected EOL at: " + get_line(line_number))
-		return False
+        if length < 2:
+                output_console("error::unexpected EOL at: " + get_line(line_number))
+                return False
 
-	# get the variable
-	l_value = line[1]
+        # get the variable
+        l_value = line[1]
 
-	if not is_valid_identifier(l_value):
-		output_console("error::invalid variable at: " + get_line(line_number))
-		return False
+        if not is_valid_identifier(l_value):
+                output_console("error::invalid variable at: " + get_line(line_number))
+                return False
 
-	if l_value in symbols.keys():
-		output_console("error::redeclaration at: " + get_line(line_number))
-		return False		
+        if l_value in symbols.keys():
+                output_console("error::redeclaration at: " + get_line(line_number))
+                return False            
 
-	if length==2: # uninitialized
-		symbols[l_value] = "NOOB"
-	elif length >= 4 and line[2]=="ITZ": # initialized
-		r_value = line[3]
-		if is_literal(r_value)=="YARN" and length==6: # yarn
-			symbols[l_value] = line[4]
-		elif is_literal(r_value) and length==4: # other literals
-			symbols[l_value] = r_value
-		elif r_value in symbols.keys() and length==4: # variable
-			symbols[l_value] = symbols[r_value]
-		elif eval_expr(line[3:]): # expression
-			symbols[l_value] = symbols["IT"]
-		else:
-			output_console("error::in the literal, variable, or expression at: " + get_line(line_number))
-			return False
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        if length==2: # uninitialized
+                symbols[l_value] = "NOOB"
+        elif length >= 4 and line[2]=="ITZ": # initialized
+                r_value = line[3]
+                if is_literal(r_value)=="YARN" and length==6: # yarn
+                        symbols[l_value] = line[4]
+                elif is_literal(r_value) and length==4: # other literals
+                        symbols[l_value] = r_value
+                elif r_value in symbols.keys() and length==4: # variable
+                        symbols[l_value] = symbols[r_value]
+                elif eval_expr(line[3:]): # expression
+                        symbols[l_value] = symbols["IT"]
+                else:
+                        output_console("error::in the literal, variable, or expression at: " + get_line(line_number))
+                        return False
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
 
-	line_number += 1
-	return True
+        line_number += 1
+        return True
 
 def assignment():
-	global line_number
+        global line_number
 
-	line = tokens[line_number]
-	length = len(line)
+        line = tokens[line_number]
+        length = len(line)
 
-	# check if line has valid length
-	if length < 3:
-		output_console("error::unexpected EOL at: " + get_line(line_number))
-		return False
+        # check if line has valid length
+        if length < 3:
+                output_console("error::unexpected EOL at: " + get_line(line_number))
+                return False
 
-	# check if lhs is an existing variable
-	lhs = line[0]
-	
-	if lhs not in symbols.keys():
-		output_console("error::undeclared variable at: " + get_line(line_number))
-		return False
+        # check if lhs is an existing variable
+        lhs = line[0]
+        
+        if lhs not in symbols.keys():
+                output_console("error::undeclared variable at: " + get_line(line_number))
+                return False
 
-	# check if the next token is R or IS NOW A
-	if line[1]=="IS NOW A":
-		if length != 3:
-			output_console("error at: " + get_line(line_number))
-			return False
-		line[1] = "R"
-		line.insert(2, "MAEK")
-		length = len(line)
-	elif line[1]!="R":
-		output_console("error::expected R or IS NOW A at: " + get_line(line_number))
-		return False
+        # check if the next token is R or IS NOW A
+        if line[1]=="IS NOW A":
+                if length != 3:
+                        output_console("error at: " + get_line(line_number))
+                        return False
+                line[1] = "R"
+                line.insert(2, "MAEK")
+                length = len(line)
+        elif line[1]!="R":
+                output_console("error::expected R or IS NOW A at: " + get_line(line_number))
+                return False
 
-	# check if rhs is literal, variable, typecast, or expr
-	rhs = line[2]
-	value = ''
-	eol = False
+        # check if rhs is literal, variable, typecast, or expr
+        rhs = line[2]
+        value = ''
+        eol = False
 
-	if is_literal(rhs)=="YARN" and length==5:
-		symbols[lhs] = line[3]
-	elif is_literal(rhs) and length==3:
-		symbols[lhs] = rhs
-	elif rhs in symbols.keys() and length==3:
-		symbols[lhs] = symbols[rhs]
-	elif rhs=="MAEK":
-		if not typecast(line[2:], lhs):
-			return False
-	elif eval_expr(line[2:]):
-		symbols[lhs] = symbols["IT"]
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
+        if is_literal(rhs)=="YARN" and length==5:
+                symbols[lhs] = line[3]
+        elif is_literal(rhs) and length==3:
+                symbols[lhs] = rhs
+        elif rhs in symbols.keys() and length==3:
+                symbols[lhs] = symbols[rhs]
+        elif rhs=="MAEK":
+                if not typecast(line[2:], lhs):
+                        return False
+        elif eval_expr(line[2:]):
+                symbols[lhs] = symbols["IT"]
+        else:
+                output_console("error at: " + get_line(line_number))
+                return False
 
-	# update line number and return true
-	line_number += 1
-	return True
+        # update line number and return true
+        line_number += 1
+        return True
 
 def cast(variable, needed_type):
-	# NOOB, "", 0 -> FAIL
-	# OTHERS -> WIN
-	# WIN -> NUMBR, NUMBAR (1[.0])
-	# FAIL -> NUMBR, NUMBAR (0[.0])
-	# NUMBR <-> NUMBAR
-	# NUMBR, NUMBAR(2 DECIMAL) <-> YARN
-	if needed_type=="NOOB":
-		return "NOOB"
+        # NOOB, "", 0 -> FAIL
+        # OTHERS -> WIN
+        # WIN -> NUMBR, NUMBAR (1[.0])
+        # FAIL -> NUMBR, NUMBAR (0[.0])
+        # NUMBR <-> NUMBAR
+        # NUMBR, NUMBAR(2 DECIMAL) <-> YARN
+        if needed_type=="NOOB":
+                return "NOOB"
 
-	elif needed_type=="TROOF":
-		if variable in ["WIN", "FAIL"]:
-			return variable
-		elif variable in ["NOOB", '', 0]:
-			return "FAIL"
-		else:
-			return "WIN"
-	
-	elif needed_type=="YARN":
-		if type(variable)==str:
-			return variable
-		elif type(variable)==int or type(variable)==float:
-			return str(variable)
-	
-	elif needed_type=="NUMBR":
-		if type(variable)==int:
-			return variable
-		elif type(variable)==float:
-			return int(variable)
-		elif variable=="WIN":
-			return 1
-		elif variable=="FAIL":
-			return 0
-		elif is_numeric(variable):
-			return int(eval(variable))
+        elif needed_type=="TROOF":
+                if variable in ["WIN", "FAIL"]:
+                        return variable
+                elif variable in ["NOOB", '', 0]:
+                        return "FAIL"
+                else:
+                        return "WIN"
+        
+        elif needed_type=="YARN":
+                if type(variable)==str:
+                        return variable
+                elif type(variable)==int or type(variable)==float:
+                        return str(variable)
+        
+        elif needed_type=="NUMBR":
+                if type(variable)==int:
+                        return variable
+                elif type(variable)==float:
+                        return int(variable)
+                elif variable=="WIN":
+                        return 1
+                elif variable=="FAIL":
+                        return 0
+                elif is_numeric(variable):
+                        return int(eval(variable))
 
-	elif needed_type=="NUMBAR":
-		if type(variable)==float:
-			return variable
-		elif type(variable)==int:
-			return float(variable)
-		elif variable=="WIN":
-			return 1.0
-		elif variable=="FAIL":
-			return 0.0
-		elif is_numeric(variable):
-			return float(eval(variable))
+        elif needed_type=="NUMBAR":
+                if type(variable)==float:
+                        return variable
+                elif type(variable)==int:
+                        return float(variable)
+                elif variable=="WIN":
+                        return 1.0
+                elif variable=="FAIL":
+                        return 0.0
+                elif is_numeric(variable):
+                        return float(eval(variable))
 
-	return False
+        return False
 
 def typecast(token_list, dest):
-	valid_types = ['TROOF', 'YARN', 'NUMBR', 'NUMBAR', 'NOOB']
-	type_result = token_list[-1]
+        valid_types = ['TROOF', 'YARN', 'NUMBR', 'NUMBAR', 'NOOB']
+        type_result = token_list[-1]
 
-	# check if type is valid
-	if type_result not in valid_types:
-		output_console("error::type must be TROOF, YARN, NUMBR, NUMBAR, or NOOB at: " + get_line(line_number))
-		return False
+        # check if type is valid
+        if type_result not in valid_types:
+                output_console("error::type must be TROOF, YARN, NUMBR, NUMBAR, or NOOB at: " + get_line(line_number))
+                return False
 
-	# check if has A
-	has_a = "A" in token_list
-	expr_end = -2 if has_a else -1
-	expr_result = eval_expr(token_list[1:expr_end])
-	value = token_list[1]
+        # check if has A
+        has_a = "A" in token_list
+        expr_end = -2 if has_a else -1
+        expr_result = eval_expr(token_list[1:expr_end])
+        value = token_list[1]
 
-	if expr_result: # expression
-		value = 'IT' 
-	elif len(token_list[1:expr_end])!=1 or value not in symbols.keys(): # variable
-		output_console("error::in expression or variable at: " + get_line(line_number))
-		return False
+        if expr_result: # expression
+                value = 'IT' 
+        elif len(token_list[1:expr_end])!=1 or value not in symbols.keys(): # variable
+                output_console("error::in expression or variable at: " + get_line(line_number))
+                return False
 
-	value = symbols[value]
+        value = symbols[value]
 
-	# special case for explicit casting
-	if value=="NOOB":
-		if type_result=="NUMBR":
-			symbols[dest] = 0 # store the result to dest
-			return True
-		elif type_result=="NUMBAR":
-			symbols[dest] = 0.0 # store the result to dest
-			return True
-		elif type_result=="YARN":
-			symbols[dest] = '' # store the result to dest
-			return True
-	
-	result = cast(value, type_result) # typecast
+        # special case for explicit casting
+        if value=="NOOB":
+                if type_result=="NUMBR":
+                        symbols[dest] = 0 # store the result to dest
+                        return True
+                elif type_result=="NUMBAR":
+                        symbols[dest] = 0.0 # store the result to dest
+                        return True
+                elif type_result=="YARN":
+                        symbols[dest] = '' # store the result to dest
+                        return True
+        
+        result = cast(value, type_result) # typecast
 
-	if result==False: # typecast failed
-		output_console("error::cannot be typecasted at: " + get_line(line_number))
-		return False	
+        if result==False: # typecast failed
+                output_console("error::cannot be typecasted at: " + get_line(line_number))
+                return False    
 
-	symbols[dest] = result # store the result to dest
-	return True
+        symbols[dest] = result # store the result to dest
+        return True
 
 ###CODE BLOCKS###
 
 def find_end_block(needed_token, incrementor, start, end):
-	max_length = len(tokens)
-	if start >= max_length and end > max_length:
-		return -1
+        max_length = len(tokens)
+        if start >= max_length and end > max_length:
+                return -1
 
-	count = 1
-	for i in range(start, end):
-		token = tokens[i][0]
+        count = 1
+        for i in range(start, end):
+                token = tokens[i][0]
 
-		if token==needed_token:
-			count -= 1
-		elif token in incrementor:
-			count += 1
+                if token==needed_token:
+                        count -= 1
+                elif token in incrementor:
+                        count += 1
 
-		if count==0: # found the pair/end of block code
-			return i
-	return -1
+                if count==0: # found the pair/end of block code
+                        return i
+        return -1
 
 def find_keyword(needed_token, start, end):
-	while start < end:
-		token = tokens[start][0]
-		if token=="O RLY?" or token=="WTF?": # skip if-else and switch-case
-			start = find_end_block("OIC", ["O RLY?", "WTF?"], start+1, end)
-			if start < 0:
-				return -1 
-		elif token=="IM IN YR": # skip loops
-			start = find_end_block("IM OUTTA YR", ["IM IN YR"], start+1, end)
-			if start < 0:
-				return -1
-		elif token==needed_token:
-			return start
-		start += 1
-	return -2 # no keyword found
+        while start < end:
+                token = tokens[start][0]
+                if token=="O RLY?" or token=="WTF?": # skip if-else and switch-case
+                        start = find_end_block("OIC", ["O RLY?", "WTF?"], start+1, end)
+                        if start < 0:
+                                return -1 
+                elif token=="IM IN YR": # skip loops
+                        start = find_end_block("IM OUTTA YR", ["IM IN YR"], start+1, end)
+                        if start < 0:
+                                return -1
+                elif token==needed_token:
+                        return start
+                start += 1
+        return -2 # no keyword found
 
 def validate_blocks(start, end): # checks if blocks are valid and non-empty
-	#IM IN YR
-	#YA RLY, NO WAI, OMG, OMGWTF, GTFO, OIC, IM OUTTA YR
-	invalid = ["YA RLY", "NO WAI", "OMG", "OMGWTF", "OIC", "IM OUTTA YR"]
+        #IM IN YR
+        #YA RLY, NO WAI, OMG, OMGWTF, GTFO, OIC, IM OUTTA YR
+        invalid = ["YA RLY", "NO WAI", "OMG", "OMGWTF", "OIC", "IM OUTTA YR"]
 
-	for i in range(start, end):
-		next_statement = tokens[i+1][0]
-		line = tokens[i]
-		token = line[0]
-		if token=="OMG": # check if valid OMG
-			length = len(line)
-			literal = is_literal(line[1])
-			if literal==False:
-				return [False, i]
-			elif literal=="YARN" and length!=4:
-				return [False, i]
-			elif literal in ["NUMBR", "NUMBAR", "TROOF"] and length!=2:
-				return [False, i]
-			if next_statement in invalid:
-				return [False, i+1]
-		elif token=="IM IN YR": # check if valid loop
-			if len(line) > 7:
-				regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
-				if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (eval_expr(line[6:])==False): 
-					return [False, i]
-			else:
-				return [False, i]
-			if next_statement in invalid:
-				return [False, i+1]
-		elif token=="IM OUTTA YR":
-			if len(line) != 2:
-				output_console("error at: " + get_line(i))
-				return False
+        for i in range(start, end):
+                next_statement = tokens[i+1][0]
+                line = tokens[i]
+                token = line[0]
+                if token=="OMG": # check if valid OMG
+                        length = len(line)
+                        literal = is_literal(line[1])
+                        if literal==False:
+                                return [False, i]
+                        elif literal=="YARN" and length!=4:
+                                return [False, i]
+                        elif literal in ["NUMBR", "NUMBAR", "TROOF"] and length!=2:
+                                return [False, i]
+                        if next_statement in invalid:
+                                return [False, i+1]
+                elif token=="IM IN YR": # check if valid loop
+                        if len(line) > 7:
+                                regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
+                                if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (eval_expr(line[6:])==False): 
+                                        return [False, i]
+                        else:
+                                return [False, i]
+                        if next_statement in invalid:
+                                return [False, i+1]
+                elif token=="IM OUTTA YR":
+                        if len(line) != 2:
+                                output_console("error at: " + get_line(i))
+                                return False
 
-			# label
-			label_regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
-			try:
-				label_regex.search(line[1]).group()
-			except:
-				output_console("error at: " + get_line(i))
-				return False
-		elif token=="OIC":
-			if get_line(i) != token:
-				return [False, i]
-		elif token in invalid:
-			if get_line(i) != token:
-				return [False, i]
-			if next_statement in invalid:
-				return [False, i+1]
+                        # label
+                        label_regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
+                        try:
+                                label_regex.search(line[1]).group()
+                        except:
+                                output_console("error at: " + get_line(i))
+                                return False
+                elif token=="OIC":
+                        if get_line(i) != token:
+                                return [False, i]
+                elif token in invalid:
+                        if get_line(i) != token:
+                                return [False, i]
+                        if next_statement in invalid:
+                                return [False, i+1]
 
-	return [True, end]
+        return [True, end]
 
 def if_then():
-	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
-	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
-	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
+        # MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
+        # MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
+        # MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
 
-	global line_number, tokens
+        global line_number, tokens
 
-	# O RLY?
-	if get_line(line_number)=="O RLY?": 
-		line_number += 1
-	else:
-		output_console("error::expected O RLY? at: " + get_line(line_number)) # NO O RLY? FOUND
-		return False
+        # O RLY?
+        if get_line(line_number)=="O RLY?": 
+                line_number += 1
+        else:
+                output_console("error::expected O RLY? at: " + get_line(line_number)) # NO O RLY? FOUND
+                return False
 
-	# YA RLY
-	index_ya_rly = find_line("YA RLY", line_number, line_number+1)
-	has_ya_rly = index_ya_rly > -1 
+        # YA RLY
+        index_ya_rly = find_line("YA RLY", line_number, line_number+1)
+        has_ya_rly = index_ya_rly > -1 
 
-	if has_ya_rly:
-		line_number += 1
-	else:
-		output_console("error::expected YA RLY at: " + get_line(line_number)) # NO YA RLY FOUND
-		return False
+        if has_ya_rly:
+                line_number += 1
+        else:
+                output_console("error::expected YA RLY at: " + get_line(line_number)) # NO YA RLY FOUND
+                return False
 
-	# OIC
-	index_oic = find_end_block("OIC", ["O RLY?", "WTF?"], line_number, len(tokens))
-	has_oic = index_oic > -1 and get_line(index_oic)=="OIC"
+        # OIC
+        index_oic = find_end_block("OIC", ["O RLY?", "WTF?"], line_number, len(tokens))
+        has_oic = index_oic > -1 and get_line(index_oic)=="OIC"
 
-	if has_oic:
-		# NO WAI
-		index_no_wai = find_keyword("NO WAI", line_number, index_oic)
-		has_no_wai = index_no_wai > -1 and get_line(index_no_wai)=="NO WAI"
+        if has_oic:
+                # NO WAI
+                index_no_wai = find_keyword("NO WAI", line_number, index_oic)
+                has_no_wai = index_no_wai > -1 and get_line(index_no_wai)=="NO WAI"
 
-		# verify all blocks found inside (even in nested if then)
-		is_valid = validate_blocks(index_ya_rly, index_oic)
+                # verify all blocks found inside (even in nested if then)
+                is_valid = validate_blocks(index_ya_rly, index_oic)
 
-		if not is_valid[0]:
-			output_console("error at: " + get_line(is_valid[1]))
-			return False
+                if not is_valid[0]:
+                        output_console("error at: " + get_line(is_valid[1]))
+                        return False
 
-		# check the value of IT
-		it = symbols["IT"]
-		fail = ['', 0, "NOOB"]
+                # check the value of IT
+                it = symbols["IT"]
+                fail = ['', 0, "NOOB"]
 
-		if it in fail: # FALSE
-			if has_no_wai: # has NO WAI clause
-				line_number = index_no_wai+1
-			else: # no NO WAI clause
-				line_number = index_oic+1
-				return True
-		elif has_no_wai: # TRUE
-			del tokens[index_no_wai:index_oic] # delete the NO WAI part
-			index_oic -= (index_oic - index_no_wai)
+                if it in fail: # FALSE
+                        if has_no_wai: # has NO WAI clause
+                                line_number = index_no_wai+1
+                        else: # no NO WAI clause
+                                line_number = index_oic+1
+                                return True
+                elif has_no_wai: # TRUE
+                        del tokens[index_no_wai:index_oic] # delete the NO WAI part
+                        index_oic -= (index_oic - index_no_wai)
 
-		while line_number < index_oic:
-			if not statement(True):
-				return False
+                while line_number < index_oic:
+                        if not statement(True):
+                                return False
 
-		line_number = index_oic+1
-		return True
+                line_number = index_oic+1
+                return True
 
-	else:
-		output_console("error::expected OIC") # NO OIC FOUND
-		return False
+        else:
+                output_console("error::expected OIC") # NO OIC FOUND
+                return False
 
 def switch_case():
-	global line_number, tokens
+        global line_number, tokens
 
-	# WTF?
-	if get_line(line_number)=="WTF?": 
-		line_number += 1
-	else:
-		output_console("error at: " + get_line(line_number)) # NO O RLY? FOUND
-		return False
+        # WTF?
+        if get_line(line_number)=="WTF?": 
+                line_number += 1
+        else:
+                output_console("error at: " + get_line(line_number)) # NO O RLY? FOUND
+                return False
+
+        # OIC
+        index_oic = find_end_block("OIC", ["O RLY?", "WTF?"], line_number, len(tokens))
+        has_oic = index_oic > -1 and get_line(index_oic)=="OIC"
+
+        if has_oic:
+                # check if WTF? OIC has contents
+                if index_oic-line_number==0:
+                        output_console("error at: " + get_line(line_number))
+                        return False
+
+                # OMG
+                index_omg = find_line("OMG", line_number, line_number+1)
+                has_omg = index_omg > -1
+
+                # OMGWTF
+                index_omgwtf = find_keyword("OMGWTF", line_number, index_oic)
+                has_omgwtf = index_omgwtf > -1 and get_line(index_omgwtf)=="OMGWTF"
+
+                # flag
+                matched = False
+                # cases
+                cases = []
+
+                if has_omg: 
+                        # find the indices of the cases that are connected to the current block of switch case only
+                        cases =[index_omg]
+
+                        index_omg += 1
+                        while index_omg < index_oic:
+                                index_omg = find_keyword("OMG", index_omg, index_oic)
+                                if index_omg == -1: # error within nested block
+                                        output_console("error at: " + get_line(index_oic))
+                                        return False
+                                elif index_omg == -2: # no [more] OMG
+                                        break
+                                cases.append(index_omg)
+                                index_omg += 1
+
+                        # verify all blocks found inside (even in nested switch cases)
+                        is_valid = validate_blocks(cases[0], index_oic)
+
+                        if not is_valid[0]:
+                                output_console("error at: " + get_line(is_valid[1]))
+                                return False
+
+                        # check the value of IT
+                        it = symbols["IT"]
+                        if it=="NOOB":
+                                it = "FAIL"
+                        
+                        # find where it matches
+                        for case in cases:
+                                token = tokens[case][1]
+                                if token=='"': # string
+                                        token = tokens[case][2]
+                                if token==it:
+                                        line_number = case+1
+                                        matched = True
+                                        break
+
+                else: # if no OMG, there must be OMGWTF
+                        if index_omgwtf != line_number and index_oic-index_omgwtf==1:
+                                output_console("error::expected OMG or OMGWTF at: " + get_line(line_number))
+                                return False
+
+                if not matched:
+                        if not has_omgwtf: # no match, no default case
+                                line_number = index_oic+1
+                                return True
+                        else:
+                                line_number = index_omgwtf+1 
+
+                # GTFO
+                index_gtfo = find_keyword("GTFO", line_number, index_oic)
+                has_gtfo = index_gtfo > -1 and get_line(index_gtfo)=="GTFO"
+
+                end = index_oic
+
+                if has_gtfo:
+                        end = index_gtfo
+
+                # remove the OMGWTF statement between matched case until end if there are any
+                if index_omgwtf in range(line_number, end):
+                        tokens.pop(index_omgwtf)
+                        end -= 1
+                        index_oic -= 1
+
+                # remove OMG statements between matched case until end if there are any
+                count = 0
+                for case in cases:
+                        if case in range(line_number, end):
+                                tokens.pop(case-count)
+                                end -= 1
+                                index_oic -= 1
+                                count += 1
+
+                # delete statements that wont run
+                del tokens[end:index_oic]
+                index_oic -= (index_oic - end)
+
+                # run the statements
+                while line_number < index_oic:
+                        if not statement(True):
+                                return False
+
+                line_number = index_oic+1
+                return True
+
+        else:
+                output_console("error::expected OIC") # NO OIC FOUND
+                return False
+
+def loop():
+        global tokens, line_number, is_break, in_loop
+        in_loop.append(True)
+
+        # IM IN YR
+        index_im_in_yr = line_number
+        if len(tokens[index_im_in_yr]) < 7:
+                output_console("error::expected IM IN YR <label> <operation> YR <variable> [TIL|WILE <expression>] at: " + get_line(index_im_in_yr))
+                return False
+
+        line = tokens[index_im_in_yr]
+        label = line[1]
+        operation = line[2]
+        variable = line[4]
+        clause = line[5]
+        expression = eval_expr(line[6:])
+        im_in_yr = get_line(index_im_in_yr)
+
+        # label
+        if not is_valid_identifier(label):
+                output_console("error::invalid label at: " + im_in_yr)
+                return False
+
+        # operation
+        if operation not in ["UPPIN", "NERFIN"]:
+                output_console("error::expected UPPIN or NERFIN at: " + im_in_yr)
+                return False
+
+        # YR
+        if line[3]!="YR":
+                output_console("error::expected YR at: " + im_in_yr)
+                return False            
+
+        # variable
+        if variable not in symbols.keys():
+                output_console("error::undeclared variable " + variable + " at: " + im_in_yr)
+                return False
+        elif cast(symbols[variable], "NUMBR")==False:
+                output_console("error::variable " + variable + " cannot be casted to numerical value at: " + im_in_yr)
+                return False
+
+        symbols[variable] = cast(symbols[variable], "NUMBR")
+
+        # TIL/WILE
+        if clause not in ["TIL", "WILE"]:
+                output_console("error::expected TIL or WILE at: " + im_in_yr)
+                return False
+
+        # expr
+        if not expression:
+                output_console("error::expected expression at: " + im_in_yr)
+                return False
+
+        # IM OUTTA YR
+        index_im_outta_yr = line_number
+        has_im_outta_yr = False
+
+        while index_im_outta_yr < len(tokens):
+                index_im_outta_yr = find_line(index_im_outta_yr, len(tokens))
+                if index_im_outta_yr == -1:
+                        break
+                if tokens[index_im_outta_yr][1] == label:
+                        has_im_outta_yr = True
+                        break
+                index_im_outta_yr += 1
+
+        if has_im_outta_yr:
+                # verify nested blocks
+                is_valid = validate_blocks(index_im_in_yr, index_im_outta_yr)
+
+                if not is_valid[0]:
+                        output_console("error at: " + get_line(is_valid[1]))
+                        return False 
+
+                # result of expression in IT
+                it = cast(symbols["IT"], "TROOF")
+                should_run = False
+
+                if clause=="TIL":
+                        should_run = True if it=="FAIL" else False
+                else:
+                        should_run = True if it=="WIN" else False
+
+                increment = 1 if operation=="UPPIN" else -1
+
+                # loop the statements while expression is valid or no GTFO
+                while should_run and not is_break:
+                        while line_number < index_im_outta_yr:
+                                if not statement(True):
+                                        return False
+                        symbols[variable] += increment
+                        eval_expr(line[6:])
+                        it = symbols["IT"]
+                        it = cast(it, "TROOF")
+                        should_run = False
+
+                        if clause=="TIL":
+                                should_run = True if it=="FAIL" else False
+                        else:
+                                should_run = True if it=="WIN" else False
+
+                is_break = False
+                in_loop.pop(-1)
+                line_number = index_im_outta_yr+1
+                return True
+
+        else:
+                output_console("error::expected IM OUTTA YR " + label) # NO IM OUTTA YR FOUND
+                return False
+
+
 
 	# OIC
 	index_oic = find_end_block("OIC", ["O RLY?", "WTF?"], line_number, len(tokens))
