@@ -564,11 +564,13 @@ def i_has_a():
 		symbols[l_value] = "NOOB"
 	elif length >= 4 and line[2]=="ITZ": # initialized
 		r_value = line[3]
-		if is_literal(r_value): # literal
+		if is_literal(r_value)=="YARN" and length==6: # yarn
+			symbols[l_value] = line[4]
+		elif is_literal(r_value) and length==4: # other literals
 			symbols[l_value] = r_value
-		elif r_value in symbols.keys():
+		elif r_value in symbols.keys() and length==4: # variable
 			symbols[l_value] = symbols[r_value]
-		elif eval_expr(line[3:]):
+		elif eval_expr(line[3:]): # expression
 			symbols[l_value] = symbols["IT"]
 		else:
 			output_console("error::in the literal, variable, or expression at: " + get_line(line_number))
@@ -616,7 +618,9 @@ def assignment():
 	value = ''
 	eol = False
 
-	if is_literal(rhs) and length==3:
+	if is_literal(rhs)=="YARN" and length==5:
+		symbols[lhs] = line[3]
+	elif is_literal(rhs) and length==3:
 		symbols[lhs] = rhs
 	elif rhs in symbols.keys() and length==3:
 		symbols[lhs] = symbols[rhs]
