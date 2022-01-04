@@ -411,93 +411,13 @@ def statement(is_code_block):
 	if token=="I HAS A" and not is_code_block:
 		return i_has_a()
 
-	# ARITHMETIC OPERATIONS
-	elif token=="SUM OF":
-		result = (sum_of(tokens[line_number]))
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="DIFF OF":
-		result = diff_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="PRODUKT OF":
-		result = prod_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="QUOSHUNT OF":
-		result = quo_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="MOD OF":
-		result = mod_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="BIGGR OF":
-		result = biggr_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-	elif token=="SMALLR OF":
-		result = smallr_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			get_value(expression)
-		return result
-
-	# BOOLEAN OPERATIONS
-	elif token=="BOTH OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-	elif token=="EITHER OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-	elif token=="WON OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-	elif token=="NOT":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-	elif token=="ALL OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-	elif token=="ANY OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-			eval_troof(expression)
-		return result
-
-	# COMPARISON OPERATIONS
-	elif token=="BOTH SAEM":
-		return both_saem(tokens[line_number])
-	elif token=="DIFFRINT":
-		return diffrint(tokens[line_number])
+	# OPERATIONS
+	elif token in ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF", "NOT", "ALL OF", "ANY OF", "BOTH SAEM", "DIFFRINT"]:
+		if eval_expr(tokens[line_number]):
+			line_number += 1
+			return True
+		else:
+			return False
 
 	# CONCATENTATION
 	elif token=="SMOOSH":
@@ -581,709 +501,284 @@ def is_valid_identifier(token):
 def eval_expr(token_list):
 	if len(token_list) < 2:
 		return False
-	
+
 	token = token_list[0]
 
 	# ARITHMETIC OPERATIONS
 	if token=="SUM OF":
-		result = (sum_of(tokens[line_number]))
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
+		if not is_valid_operation_call(token_list):
+			return False
+		result = arithmetic(token_list, "+")
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="DIFF OF":
-		result = diff_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
+		if not is_valid_operation_call(token_list):
+			return False
+		result = arithmetic(token_list, "-")
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="PRODUKT OF":
-		result = prod_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
+		if not is_valid_operation_call(token_list):
+			return False
+		result = arithmetic(token_list, "*")
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="QUOSHUNT OF":
-		result = quo_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
+		if not is_valid_operation_call(token_list):
+			return False
+		result = arithmetic(token_list, "/")
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="MOD OF":
-		result = mod_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
+		if not is_valid_operation_call(token_list):
+			return False
+		result = arithmetic(token_list, "%")
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="BIGGR OF":
-		result = biggr_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
+		if not is_valid_operation_call(token_list):
+			return False
+		result = arithmetic(token_list, "BIGGR")
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="SMALLR OF":
-		result = smallr_of(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				get_value(expression)
-		return result
+		if not is_valid_operation_call(token_list):
+			return False
+		result = arithmetic(token_list, "SMALLR")
+		if result or result==0:
+			return True
+		else:
+			return False
 
 	# BOOLEAN OPERATIONS
 	elif token=="BOTH OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
+		print("BOTH OF")
 	elif token=="EITHER OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
+		print("EITHER OF")
 	elif token=="WON OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
+		print("WON OF")
 	elif token=="NOT":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
+		print("NOT")
 	elif token=="ALL OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
+		print("ALL OF")
 	elif token=="ANY OF":
-		result = bool_op(tokens[line_number])
-		line_number += 1
-		if result: #if syntactically correct, solve
-				eval_troof(expression)
-		return result
-
+		print("ANY OF")
+		
 	# COMPARISON OPERATIONS
 	elif token=="BOTH SAEM":
-		return both_saem(tokens[line_number])
+		print("BOTH SAEM")
 	elif token=="DIFFRINT":
-		return diffrint(tokens[line_number])
+		print("DIFFRINT")
 
 	return True
 
-###START OF OPERATIONS####
+###START OF OPERATIONS###
 
-#FUNCTIONS FOR ARITHMETIC OPERATIONS
-def get_value(listOp):
-	global symbols
-	listOp = listOp[::-1]
-	   
-	final_expr = "("
-	for index, element in enumerate(listOp):
-		if element == "max":
-			final_expr = "max" + final_expr +"," + str(listOp[index+1]) +")"
-			del listOp[index+1]
-		elif element == "min":
-			final_expr = "min" + final_expr +"," + str(listOp[index+1]) +")"
-			del listOp[index+1]
-		elif index in range(0,3):
-			final_expr = final_expr + str(element)
-		elif index == 3:
-			final_expr = final_expr + ")" + str(element)
-		elif (index % 2) == 0:
-			final_expr = "(" + final_expr + str(element) + ")"
-		else:
-			final_expr = final_expr + str(element)
-	if (len(listOp)) == 3:
-		final_expr = final_expr + ")"
-	   
-	result = (eval(final_expr)) #return computed value
-	symbols["IT"] = result
-	
-def check_digit(token):
-	global expr 
-	is_valid = False
-	if type(token)==int: #check if numbr:
-		expr = token
-		is_valid = True
-	elif type(token)==float: #check if numbar:
-		expr = token
-		is_valid = True
-	elif is_valid_identifier(token): #if identifier check if value is numbr/numbar
-		if token in symbols.keys():
-			if symbols[token].isnumeric():
-				expr = symbols[token]
-				is_valid = True
-	#elif typecast(line[-1]): # check if typecasting is valid
-		#is_valid = True
-	return is_valid
+def find_end_any_all(token_list):
+	if "MKAY" in token_list:
+		return token_list.index("MKAY")
+	return -1 # no MKAY
 
-def check_implicit(line):
-	if (line[0] == '"' or line[0] == "'") and (line[-1] == '"' or line[-1] == "'"):
-		del line[0]
-		del line[-1]
-		if len(line) == 1:
-			return check_digit(line[0])
-		else:
-			return False
-	else:
-		return False
-	
-def next_op(line):
-
-	if line == []:
-		return True
-	elif line[0] == "SUM OF":
-		return sum_of(line)
-	elif line[0] == "DIFF OF":
-		return diff_of(line)
-	elif line[0] == "PRODUKT OF":
-		return prod_of(line)
-	elif line[0] == "QUOSHUNT OF":
-		return quo_of(line)
-	elif line[0] == "MOD OF":
-		return mod_of(line)
-	elif line[0] == "BIGGR OF":
-		return biggr_of(line)
-	elif line[0] == "SMALLR OF":
-		return smallr_of(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-
-def check_nested(line):
-	global expression
-	if line[-1] == "AN":
-		del line[-1]
-		del line[0]
-		if (len(line)==1):
-			expression.append(line[-1])
-			return check_digit(line[-1])
-		elif (len(line)==3):
-			expression.append(line[1])
-			return check_implicit(line)
-		else:
-			return next_op(line)
-				
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-
-def sum_of(line):
-	global expression, expr
-
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("+")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("+")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-
-def diff_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("-")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("-")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-	
-def prod_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("*")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("*")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-
-def quo_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("/")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("/")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-
-def mod_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("%")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("%")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-
-def biggr_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		return check_nested(line)
-		expression.append(expr)
-		expression.append("max")
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("max")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-
-def smallr_of(line):
-	if check_digit(line[-1]):
-		del line[-1]
-		expression.append(expr)
-		expression.append("min")
-		return check_nested(line)
-	elif check_implicit(line[-3:]):
-		del line[-3:]
-		expression.append(expr)
-		expression.append("min")
-		return check_nested(line)
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-
-#FUNCTIONS FOR BOOLEAN OPERATORS
-def eval_troof(expression):
-	global symbols
-	final_expr = ""
-	for index, element in enumerate(expression):
-		if element == "WIN":
-			expression[index] = "True"
-		elif element == "FAIL":
-			expression[index] = "False"
-			
-	for index, element in enumerate(expression):
-		if element == "not ":
-			final_expr = element + final_expr
-		else:
-			final_expr = final_expr + element 
-
-	result = (eval(final_expr))
-	
-	if result == True:
-		result = "WIN"
-	else:
-		result = "FAIL"
-
-	symbols["IT"] = result
-		
-def check_troof(token):
-	is_valid = False
-	global troof
-	
-	if (bool(re.match(r"(WIN|FAIL)", token))): #check if troof:
-		troof = token
-		is_valid = True
-	elif (bool(re.match(r"[a-zA-Z][a-zA-Z0-9_]*", token))): #if identifier check if value is numbr/numbar
-		if token in symbols.keys():
-			if (bool(re.matched(r"(WIN|FAIL)",symbols[token]))):
-				troof = symbols[token]
-				is_valid = True
-	#elif typecast(line[-1]): # check if implicit typecasting is valid
-		#is_valid = True
-	return is_valid
-
-def next_op_allany(line, operation):
-
-	global expression, troof
-
-	if line[0] == "NOT":
-		del line[0]
-		expression.append("not ")
-		if check_troof(line[0]):
-			expression.append(troof)
-			del line[0]
-			if line and line[0] == "AN":
-				del line[0]
-				if line == []:
-					return True
-				else:
-					expression.append(operation)
-					return next_op_allany(line, operation)
-			elif line == []:
-				return True
-			
-	elif line[0] == 'BOTH OF' or line[0] == 'EITHER OF' or line[0] == 'WON OF':
-		if check_troof(line[1]):
-			expression.append(troof)
-			del line[1]
-			if line[0] == 'BOTH OF':
-				expression.append(" and ")
-			elif line[0] == 'EITHER OF':
-				expression.append(" or ")
-			elif line[0] == 'WON OF':
-				expression.append(" ^ ")
-			else:
-				return False
-			del line[0]
-			if line[0] == "AN":
-				del line[0]
-				if check_troof(line[0]):
-					expression.append(troof)
-					del line[0]
-					if line and line[0] == "AN":
-						expression.append(operation)
-						del line[0]
-						if line == []:
-							return True
-						else:
-							return next_op_allany(line, operation)
-					elif line == []:
-						return True
-					else:
-						return False
-				else:
-					return False
-			else:
-				return False
-		else:
-			return False
-	else:
-		return False
-	
-def allany_of(line):
-	global expression, troof
-
-	if line[0] == "NOT":
-		del line[0]
-		expression.append("not ")
-		if check_troof(line[0]):
-			expression.append(troof)
-			del line[0]
-			if line and line[0] == "AN":
-				del line[0]
-				if line == []:
-					return True
-				else:
-					allany_of(line)
-			elif line == []:
-				return True
-			
-	elif line[0] == 'BOTH OF' or line[0] == 'EITHER OF' or line[0] == 'WON OF':
-		if check_troof(line[1]):
-			expression.append(troof)
-			del line[1]
-			if line[0] == 'BOTH OF':
-				expression.append(" and ")
-			elif line[0] == 'EITHER OF':
-				expression.append(" or ")
-			elif line[0] == 'WON OF':
-				expression.append(" ^ ")
-			elif line[0] == 'ALL OF' and line[-1] == 'MKAY':
-				del line[0]
-				del line[-1]
-				return next_op_allany(line, ' and ')
-			elif line[0] == 'ANY OF' and line[-1] == 'MKAY':
-				del line[0]
-				del line[-1]
-				return next_op_allany(line, ' or ')
-			else:
-				return False
-			del line[0]
-			if line[0] == "AN":
-				del line[0]
-				if check_troof(line[0]):
-					expression.append(troof)
-					del line[0]
-					if line and line[0] == "AN":
-						del line[0]
-						if line == []:
-							return True
-						else:
-							return allany_of(line)
-					elif line == []:
-						return True
-					else:
-						return False
-				else:
-					return False
-			else:
-				return False
-		else:
-			return False
-	else:
-		return False
-	
-def bool_op(line):
-	global expression
-	if line[0] == "ALL OF" and line[-1] == "MKAY":
-		del line[0]
-		del line[-1]
-		result = next_op_allany(line, " and ")
-	elif line[0] == 'ANY OF' and line[-1] == 'MKAY':
-		del line[0]
-		del line[-1]
-		result = next_op_allany(line, " or ")
-	elif line[-1] != 'MKAY':
-		result = allany_of(line)
-	else:
-		result = False
-
-	if result == False:
-		output_console("error at: " + get_line(line_number))
-	return result
-
-#FUNCTIONS FOR COMPARISON OPERATIONS
-def valid_number(token):
-	global next_num
-	if token.isnumeric():
-		next_num = token
-		return True
-	elif token in symbols:
-		if symbols[token].isnumeric():
-			next_num = symbols[token]
-			return True
-	return False
-
-def both_saem(line):
-	global next_num, line_number
-	line_number += 1
-	if line[0] == "BOTH SAEM":
-		del line[0]
-		if valid_number(line[0]):
-			first_digit = next_num
-			del line[0]
-			if line[0] == "AN":
-				del line[0]
-				if valid_number(line[0]):
-					second_digit = next_num
-					del line[0]
-					if line == []:
-						result = (first_digit  == second_digit)
-						if result:
-							symbols["IT"] = "WIN"
-							return True
-						else:
-							symbols["IT"] = "FAIL"
-							return True
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				elif line[0] == "BIGGR OF":
-					del line[0]
-					if line[0] == first_digit:
-						del line[0]
-						if line[0] == "AN":
-							del line[0]
-							if valid_number(line[0]):
-								second_digit = next_num
-								del line[0]
-								if line == []:
-									result = (first_digit  >= second_digit)
-									if result:
-										symbols["IT"] = "WIN"
-										return True
-									else:
-										symbols["IT"] = "FAIL"
-										return True
-					
-								else:
-									output_console("error at: " + get_line(line_number))
-									return False
-							else:
-								output_console("error at: " + get_line(line_number))
-								return False
-						else:
-							output_console("error at: " + get_line(line_number))
-							return False
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				elif line[0] == "SMALLR OF":
-					del line[0]
-					if line[0] == first_digit:
-						del line[0]
-						if line[0] == "AN":
-							del line[0]
-							if valid_number(line[0]):
-								second_digit = next_num
-								del line[0]
-								if line == []:
-									result = (first_digit  <= second_digit)
-									if result:
-										symbols["IT"] = "WIN"
-										return True
-									else:
-										symbols["IT"] = "FAIL"
-										return True
-					
-								else:
-									output_console("error at: " + get_line(line_number))
-									return False
-							else:
-								output_console("error at: " + get_line(line_number))
-								return False
-						else:
-							output_console("error at: " + get_line(line_number))
-							return False
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				else:
-					output_console("error at: " + get_line(line_number))
-					return False
-			else:
-				output_console("error at: " + get_line(line_number))
-				return False
-		else:
-			output_console("error at: " + get_line(line_number))
-			return False
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-
-def diffrint(line):
-	global next_num, line_number
-	line_number += 1
-	if line[0] == "DIFFRINT":
-		del line[0]
-		if valid_number(line[0]):
-			first_digit = next_num
-			del line[0]
-			if line[0] == "AN":
-				del line[0]
-				if valid_number(line[0]):
-					second_digit = next_num
-					del line[0]
-					if line == []:
-						result = (first_digit  != second_digit)
-						if result:
-							symbols["IT"] = "WIN"
-							return True
-						else:
-							symbols["IT"] = "FAIL"
-							return True
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				elif line[0] == "BIGGR OF":
-					del line[0]
-					if line[0] == first_digit:
-						del line[0]
-						if line[0] == "AN":
-							del line[0]
-							if valid_number(line[0]):
-								second_digit = next_num
-								del line[0]
-								if line == []:
-									result = (first_digit  > second_digit)
-									if result:
-										symbols["IT"] = "WIN"
-										return True
-									else:
-										symbols["IT"] = "FAIL"
-										return True
-					
-								else:
-									output_console("error at: " + get_line(line_number))
-									return False
-							else:
-								output_console("error at: " + get_line(line_number))
-								return False
-						else:
-							output_console("error at: " + get_line(line_number))
-							return False
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				elif line[0] == "SMALLR OF":
-					del line[0]
-					if line[0] == first_digit:
-						del line[0]
-						if line[0] == "AN":
-							del line[0]
-							if valid_number(line[0]):
-								second_digit = next_num
-								del line[0]
-								if line == []:
-									result = (first_digit  < second_digit)
-									if result:
-										symbols["IT"] = "WIN"
-										return True
-									else:
-										symbols["IT"] = "FAIL"
-										return True
-					
-								else:
-									output_console("error at: " + get_line(line_number))
-									return False
-							else:
-								output_console("error at: " + get_line(line_number))
-								return False
-						else:
-							output_console("error at: " + get_line(line_number))
-							return False
-					else:
-						output_console("error at: " + get_line(line_number))
-						return False
-				else:
-					output_console("error at: " + get_line(line_number))
-					return False
-			else:
-				output_console("error at: " + get_line(line_number))
-				return False
-		else:
-			output_console("error at: " + get_line(line_number))
-			return False
-	else:
-		output_console("error at: " + get_line(line_number))
-		return False
-	
-def find_end_block(needed_token, incrementor, start, end):
-	max_length = len(tokens)
-	if start >= max_length and end >= max_length:
+def find_second_op(token_list):
+	if len(token_list) < 2:
 		return -1
 
 	count = 1
-	for i in range(start, end):
-		token = tokens[i][0]
-		if token==needed_token:
-			count -= 1
-		elif token in incrementor:
+	ops = ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF"]
+	others = ["ALL OF", "ANY OF"]
+	i = 0
+	end = len(token_list)
+
+	while i < end:
+		if token_list[i] in ops:
 			count += 1
-
-		if count==0:
+		elif token_list[i] in others:
+			i = find_end_any_all(token_list[i:])
+			if i==-1:
+				return -1
+		elif token_list[i] == "AN":
+			count -= 1
+		if count == 0:
 			return i
-	return -1
+		i += 1
 
-###END OF OPERATIONS###
+	return -1 # no second operand
+
+def is_valid_operation_call(token_list):
+	op_count = 0
+	ans_count = 0
+
+	ops = ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF"]
+	others = ["ANY OF", "ALL OF"]
+	i = 0
+	end = len(token_list)
+
+	# end must be literal/variable
+	if not is_literal(token_list[-1]):
+		output_console("error at: " + get_line(line_number))
+		return False
+
+	while i < end:
+		if token_list[i] in ops:
+			op_count += 1
+		elif token_list[i] == "AN":
+			ans_count += 1
+		elif token_list[i] in others:
+			i = find_end_any_all(token_list[i:])
+			if i==-1:
+				return False
+		i += 1
+
+	if op_count==ans_count:
+		# check if operands are separated by AN
+		for i in range(len(token_list)-1):
+			gap = 1
+			current_lit = is_literal(token_list[i])
+			if current_lit=="YARN":
+				gap = 3
+				if i+gap >= len(token_list):
+					break
+			current_var = token_list[i] in symbols.keys()
+
+			next_lit = is_literal(token_list[i+gap])
+			next_var = token_list[i+gap] in symbols.keys()
+			
+			if current_lit and (next_lit or next_var):
+				output_console("error::expected AN at: " + get_line(line_number))
+				return False
+			elif current_var and (next_lit or next_var):
+				output_console("error::expected AN at: " + get_line(line_number))
+				return False
+
+		return True
+
+	output_console("error at: " + get_line(line_number))
+	return False # some operator is not binary
+
+def eval_op(token_list):
+	# evaluates the operand
+	operand = token_list[0]
+	literal = is_literal(operand)
+	result = 0
+	length = len(token_list)
+
+	if literal: # literal
+		if literal=="NUMBR" or literal=="NUMBAR":
+			result = operand
+		elif literal=="YARN" and "." in operand:
+			result = cast(token_list[1], "NUMBAR")
+			if bool(result) and result==False:
+				print("1")
+				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
+				return False
+		elif literal=="YARN":
+			result = cast(token_list[1], "NUMBR")
+			if bool(result) and result==False:
+				print("2")
+
+				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
+				return False
+		else:
+			result = cast(operand, "NUMBR")
+			if bool(result) and result==False:
+				print("3")
+
+				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
+				return False
+
+	elif operand in symbols.keys(): # variable
+		result = symbols[operand]
+		if type(result)==str and "." in result:
+			result = cast(result, "NUMBAR")
+			if bool(result) and result==False:
+				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
+				return False
+		else:
+			result = cast(result, "NUMBR")
+			if bool(result) and result==False:
+				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
+				return False
+
+	elif eval_expr(token_list): # expression
+		result = symbols["IT"]
+
+		if type(result)==str and "." in result:
+			result = cast(result, "NUMBAR")
+			if bool(result) and result==False:
+				print("here")
+				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
+				return False
+		else:
+			result = cast(result, "NUMBR")
+			if bool(result) and result==False:
+				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
+				return False
+
+	return result
+
+def arithmetic(token_list, operation):
+	global line_number
+
+	if len(token_list) < 4:
+		output_console("error::expected an operand at: " + get_line(line_number))
+		return False
+
+	# operands may be literal, var, expr of type NUMBR/NUMBAR
+	first_op = token_list[1]
+
+	# find 2nd operand
+	index_second_op = find_second_op(token_list[1:])
+
+	if index_second_op==-1:
+		output_console("error::expected an operand at: " + get_line(line_number))
+		return False
+
+	index_second_op += 2
+	if index_second_op >= len(token_list):
+		output_console("error::expected an operand at: " + get_line(line_number))
+		return False
+
+	second_op = token_list[index_second_op]
+
+	# evaluate operands
+	rhs = eval_op(token_list[index_second_op:])
+	if bool(rhs) and rhs==False:
+		return False
+
+	end = index_second_op + 1
+
+	del token_list[index_second_op:]
+	token_list.append(rhs)
+
+	lhs = eval_op(token_list[1:index_second_op-1])
+	if bool(lhs) and lhs==False:
+		return False
+
+	result = 0
+	if operation=="BIGGR":
+		result = eval("max("+str(lhs)+","+str(rhs)+")")
+	elif operation=="SMALLR":
+		result = eval("min("+str(lhs)+","+str(rhs)+")")
+	else:
+		result = eval(str(lhs)+operation+str(rhs))
+	
+	symbols["IT"] = result
+	return result
+
+
+###END###
 
 def i_has_a():
 	global line_number
@@ -1402,9 +897,11 @@ def cast(variable, needed_type):
 	elif needed_type=="YARN":
 		if type(variable)==str:
 			return variable
-		elif type(variable)==int or type(variable)==float:
+		elif type(variable)==int:
 			return str(variable)
-	
+		elif type(variable)==float:
+			return(str(round(variable, 2)))
+
 	elif needed_type=="NUMBR":
 		if type(variable)==int:
 			return variable
