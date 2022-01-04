@@ -43,10 +43,16 @@ def show_file_contents(contents):
 	text_editor.insert(1.0, contents) # print contents to GUI
 
 def run():
-	# reset some variables
-	global line_number, tokens
+	# reset variables
+	global tokens, line_number, symbols, is_break, in_loop
+	tokens = []
 	line_number = 0
+	symbols = {"IT": "NOOB"}
+	is_break = False 
+	in_loop = []
+	console["state"] = "normal"
 	console.delete(1.0, END)
+	console["state"] = "disabled"
 
 	code = text_editor.get(1.0,'end-1c') # get the input from Text widget
 	if code.strip()=='': return # no input
@@ -344,8 +350,10 @@ def remove_comment_delims():
 	return new_tokens
 
 def output_console(contents):
+	console["state"] = "normal"
 	console.insert(END, contents) # print contents to GUI
 	console.insert(END, "\n") # print contents to GUI
+	console["state"] = "disabled"
 
 def syntax_analyzer():
 	global tokens
@@ -528,7 +536,7 @@ def find_keyword(needed_token, start, end):
 		start += 1
 	return -2 # no keyword found
 
-def is_expr(token_list):
+def loop_expr(token_list):
 	# call expression
 	return True
 
@@ -557,7 +565,7 @@ def validate_blocks(start, end): # checks if blocks are valid and non-empty
 		elif token=="IM IN YR": # check if valid loop
 			if len(line) > 7:
 				regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
-				if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (not is_expr(line[6:])): 
+				if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (not loop_expr(line[6:])): 
 					return [False, i]
 			else:
 				return [False, i]
@@ -714,8 +722,10 @@ def switch_case():
 			# find where it matches
 			for case in cases:
 				token = tokens[case][1]
-				if token=='"':
+				if token=='"': # string
 					token = tokens[case][2]
+				elif token.replace('.','',1).replace('-','',1).isdigit(): # numbr/numbar
+					token = eval(token)
 				if token==it:
 					line_number = case+1
 					matched = True
@@ -821,7 +831,6 @@ def cast(variable, needed_type):
 
 	return False
 
-
 def loop():
 	global tokens, line_number, is_break, in_loop
 	in_loop.append(True)
@@ -835,9 +844,9 @@ def loop():
 	line = tokens[index_im_in_yr]
 	label = line[1]
 	operation = line[2]
-	variable = ''
+	variable = line[4]
 	clause = line[5]
-	expression = is_expr(line[6:])
+	expression = loop_expr(line[6:])
 	im_in_yr = get_line(index_im_in_yr)
 
 	# label
@@ -898,8 +907,7 @@ def loop():
 			return False 
 
 		# result of expression in IT
-		it = symbols["IT"]
-		it = cast(it, "TROOF")
+		it = cast(symbols["IT"], "TROOF")
 		should_run = False
 
 		if clause=="TIL":
@@ -912,7 +920,7 @@ def loop():
 			while line_number < index_im_outta_yr:
 				if not statement(True):
 					return False
-			is_expr(line[6:])
+			loop_expr(line[6:])
 			it = symbols["IT"]
 			it = cast(it, "TROOF")
 			should_run = False
@@ -1018,6 +1026,7 @@ run_btn.pack(pady=5, fill=X)
 ### CONSOLE ###
 console = scrolledtext.ScrolledText(main_frame)
 console.pack(expand=True, fill=BOTH)
+console["state"] = "disabled"
 
 ### start the app ###
 root.mainloop()
