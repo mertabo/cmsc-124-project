@@ -60,6 +60,7 @@ def run():
 	if has_lexical_errors: return # has unknown keywords
 
 	tokens = remove_comment_delims()
+	fill_table(symbtable_table, [["IT"]], [["NOOB"]])
 	syntax_analyzer()
 
 def remove_comments(src_code):
@@ -364,6 +365,7 @@ def syntax_analyzer():
 				while line_number < len(tokens): # check the rest of the code
 					if not statement(False):
 						break 
+				fill_table(symbtable_table, [list(symbols.keys())], [list(symbols.values())])
 		else:
 			output_console("error at: " + get_line(i)) # program has no KTHXBYE
 	else: # program does not start with HAI
@@ -410,6 +412,9 @@ def statement(is_code_block):
 	# VARIABLE DECLARATION
 	if token=="I HAS A" and not is_code_block:
 		return i_has_a()
+	elif token=="I HAS A" and is_code_block:
+		output_console("error::cannot declare inside code block at: " + get_line(line_number))
+		return False
 
 	# OPERATIONS
 	elif token in ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF", "NOT", "ALL OF", "ANY OF", "BOTH SAEM", "DIFFRINT"]:
@@ -609,7 +614,7 @@ def eval_expr(token_list):
 			return False
 		return True
 
-	return True
+	return False
 
 ###START OF OPERATIONS###
 
@@ -708,6 +713,8 @@ def eval_op(token_list, typecast_to):
 			result = operand
 		elif literal=="YARN" and typecast_to=="TROOF":
 			result = "FAIL" if token_list[1]!='"' else "WIN"
+		elif literal=="YARN" and typecast_to==False:
+			result = str(token_list[1])
 		elif typecast_to=="TROOF":
 			result = cast(operand, "TROOF")
 			if bool(result) and result==False:
@@ -778,7 +785,6 @@ def eval_op(token_list, typecast_to):
 		elif type(result)==str and "." in result:
 			result = cast(result, "NUMBAR")
 			if bool(result) and result==False:
-				print("here")
 				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
 				return False
 		else:
@@ -846,7 +852,8 @@ def operations(token_list, operation, typecast_to):
 	elif operation=="SMALLR":
 		result = eval("min("+str(lhs)+","+str(rhs)+")")
 	elif operation=="NOT":
-		result = eval("not "+str(lhs))
+		fail = ["", 0, 0.0, "NOOB", "FAIL"]
+		result = lhs in fail
 	elif typecast_to==False:
 		result = lhs==rhs if operation=="==" else lhs!=rhs
 	else:
@@ -856,6 +863,11 @@ def operations(token_list, operation, typecast_to):
 		result = "WIN" if result==True else "FAIL"
 
 	symbols["IT"] = result
+	# check if arithmetic operation (result is number)
+	if type(symbols["IT"])==int or type(symbols["IT"])==float:
+		# if at least one operation is float, result must be float
+		symbols["IT"] = float(result) if (type(lhs)==float or type(rhs)==float) else int(result)
+
 	return result
 
 def any_all(token_list):
@@ -910,7 +922,6 @@ def any_all(token_list):
 		if bool(result) and result==False:
 			return False
 		evaluated_ops.append(result)
-			# output_console("error at: " + get_line(line_number))
 
 	# make operands True/False
 	result = ''
@@ -923,6 +934,8 @@ def any_all(token_list):
 			result += " " + operation + " "
 
 	symbols["IT"] = eval(result)
+	symbols["IT"] = "WIN" if symbols["IT"] else "FAIL"
+
 	return True
 
 ###END OF OPERATIONS###
@@ -999,6 +1012,7 @@ def assignment():
 			return False
 		line[1] = "R"
 		line.insert(2, "MAEK")
+		line.insert(3, lhs)
 		length = len(line)
 	elif line[1]!="R":
 		output_console("error::expected R or IS NOW A at: " + get_line(line_number))
@@ -1164,9 +1178,9 @@ def visible(index, to_print):
 	# read the print arguments
 	# need to determine if variable identifier, expr, literal, another argument + identifier, another argument + expr, another arg + literal
 	token = get_current_token(index)
-	line = tokens[line_number][index:] # get the rest of the line
+	line = tokens[line_number][index:].copy() # get the rest of the line
 	tokens_consumed = count_ops(line) # count tokens consumed
-	end_index = tokens_consumed + index # this will be the end index if it's an expression. if not expr, then end_index = index
+	end_index = tokens_consumed + index + 1 # this will be the end index if it's an expression. if not expr, then end_index = index
 
 	if not token: # if EOL / this is the base case
 
@@ -1177,22 +1191,24 @@ def visible(index, to_print):
 	# check if identifier, expr, or literal
 	if token in symbols.keys():
 		# if the token is a variable, numbr, numbar, or troof
+		if is_literal(symbols[token]) == "NOOB":
+			output_console("error::VISIBLE cannot print type NOOB at: " + get_line(line_number))
+			return False
 
 		# output the variable value in console.
 		return visible(index + 1, to_print + str(symbols[token]))
 
 	elif token == "SMOOSH":
 		if smoosh(index + 1, ""):
-			unread_line = tokens[line_number][index:].copy()
 
-			if not "MKAY" in unread_line: # if walang mkay, this means na walang error sa smoosh and we are at the end of the line
+			if not "MKAY" in line: # if walang mkay, this means na walang error sa smoosh and we are at the end of the line
 				output_console(to_print + symbols["IT"]) # print everything + yung nasmoosh
 				line_number += 1
 				return True
 
 			# if may mkay pa, find it and update the index accordingly.
-			tokens_consumed = unread_line.index("MKAY") # find the index of the next mkay in unread line, and that's the emount of tokens consumed
-			index += tokens_consumed # update index
+			# find the index of the next mkay in unread line, and that's the emount of tokens consumed
+			index += line.index("MKAY")
 
 			return visible(index + 1, to_print + str(symbols["IT"])) # continue visible to the next token AFTER mkay
 		else:
@@ -1221,16 +1237,16 @@ def visible(index, to_print):
 
 	# not in variables or anything else
 	else:
-		output_console("error at: " + get_line(line_number) + " (" + token + " is not valid or recognized" + ")")
+		output_console("error::cannot print " + token + " at line: " + get_line(line_number))
 		return False
-
+		
 def gimmeh(index):
 	global symbols, line_number
 
 	# check if the index after the current is less than the length of the line, meaning theres more than one token in the line
 	if index + 1 < len(tokens[line_number]):
 
-		output_console("error at: " + get_line(line_number) + " (GIMMEH only requires one variable)")
+		output_console("error::GIMMEH only requires one variable, at line: " + get_line(line_number))
 		return False
 
 	else:
@@ -1244,7 +1260,7 @@ def gimmeh(index):
 
 		else:
 			# if wala yung token sa declared variables dict
-			output_console("error at: " + get_line(line_number) + " (" + token + " is an undeclared variable.")
+			output_console("error::" + token + " is an undeclared variable at: " + get_line(line_number))
 			return False
 
 	# update line and return true
@@ -1257,7 +1273,7 @@ def smoosh(index, to_smoosh):
 	string = get_current_token(index)
 
 	if not string: # if eol right after SMOOSH; meaning walang laman
-		output_console("error at: " + get_line(line_number) + " (Unexpected EOL)")
+		output_console("error::unexpected EOL at: " + get_line(line_number))
 		return False
 
 	if string in symbols.keys():
@@ -1271,7 +1287,7 @@ def smoosh(index, to_smoosh):
 	elif is_literal(string)=="YARN":
 
 		if get_current_token(index + 2) != "\"": # check the tokens after the yarn literal (+1 is yarn literal, +2 is closing del)
-			output_console("error::unexpected EOL at: " + get_line(line_number))
+			output_console("error::expected closing delimiter (\") at: " + get_line(line_number))
 			return False
 
 		to_smoosh += get_current_token(index + 1) # get the token after the opening delim
@@ -1296,8 +1312,9 @@ def smoosh(index, to_smoosh):
 
 	else:
 		# if walang an
-		output_console("error at: " + get_line(line_number) + " (Expected AN, got " + next_token + ")")
+		output_console("error::expected AN, got " + next_token + " at: " + get_line(line_number))
 		return False
+
 
 ###MANIFESTING WALA NA BUGS YEAH###
 
@@ -1360,9 +1377,9 @@ def validate_blocks(start, end): # checks if blocks are valid and non-empty
 				return [False, i+1]
 		elif token=="IM IN YR": # check if valid loop
 			if len(line) > 7:
-				regex = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
-				if (not regex.search(line[1])) or (line[2] not in ["UPPIN", "NERFIN"]) or (line[3]!="YR") or (line[4] not in symbols.keys()) or (line[5] not in ["TIL", "WILE"]) or (eval_expr(line[6:])==False): 
-					return [False, i]
+				if (is_valid_identifier(line[1])) and (line[2] in ["UPPIN", "NERFIN"]) and (line[3]=="YR") and (is_valid_identifier(line[4])) and (line[5]  in ["TIL", "WILE"]) and (eval_expr(line[6:])==True): 
+					return [True, end]
+				return [False, i]
 			else:
 				return [False, i]
 			if next_statement in invalid:
@@ -1631,7 +1648,7 @@ def loop():
 	has_im_outta_yr = False
 
 	while index_im_outta_yr < len(tokens):
-		index_im_outta_yr = find_line(index_im_outta_yr, len(tokens))
+		index_im_outta_yr = find_line("IM OUTTA YR", index_im_outta_yr, len(tokens))
 		if index_im_outta_yr == -1:
 			break
 		if tokens[index_im_outta_yr][1] == label:
@@ -1659,6 +1676,7 @@ def loop():
 		increment = 1 if operation=="UPPIN" else -1
 
 		# loop the statements while expression is valid or no GTFO
+		line_number = index_im_in_yr+1
 		while should_run and not is_break:
 			while line_number < index_im_outta_yr:
 				if not statement(True):
@@ -1673,6 +1691,8 @@ def loop():
 				should_run = True if it=="FAIL" else False
 			else:
 				should_run = True if it=="WIN" else False
+
+			line_number = index_im_in_yr+1
 
 		is_break = False
 		in_loop.pop(-1)
