@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog as fd
+from tkinter.simpledialog import askstring
 import tkinter.scrolledtext as scrolledtext
 import re
 
@@ -8,8 +9,6 @@ import re
 tokens = []
 line_number = 0
 symbols = {"IT": "NOOB"}
-# for operations
-expression = []
 # for loops
 is_break = False 
 in_loop = []
@@ -38,11 +37,10 @@ def show_file_contents(contents):
 
 def run():
 	# reset variables
-	global tokens, line_number, symbols, expression, is_break, in_loop
+	global tokens, line_number, symbols, is_break, in_loop
 	tokens = []
 	line_number = 0
 	symbols = {"IT": "NOOB"}
-	expression = []
 	is_break = False 
 	in_loop = []
 	console["state"] = "normal"
@@ -366,7 +364,6 @@ def syntax_analyzer():
 				while line_number < len(tokens): # check the rest of the code
 					if not statement(False):
 						break 
-				fill_table(symbtable_table, [list(symbols.keys())], [list(symbols.values())])
 		else:
 			output_console("error at: " + get_line(i)) # program has no KTHXBYE
 	else: # program does not start with HAI
@@ -395,14 +392,17 @@ def check_token(needed_token, index):
 	current_token = get_current_token(index)
 
 	if not current_token: # reached the EOL
-		line_number += 1 
 		return 0
 	elif current_token==needed_token: # correct syntax
 		return index+1
 	else:
+		output_console("error::Expected " + needed_token + ", got " + current_token + " at: " + get_line(line_number))
 		return -1 # wrong syntax
 
 def statement(is_code_block):
+	# update table
+	fill_table(symbtable_table, [list(symbols.keys())], [list(symbols.values())])
+
 	# THIS IS WHERE THE ACTUAL START OF ANALYZING THE STATEMENTS
 	global line_number
 	token = get_current_token(0)
@@ -423,19 +423,24 @@ def statement(is_code_block):
 
 	# CONCATENTATION
 	elif token=="SMOOSH":
-		print("SMOOSH")
+		if smoosh(1, ""):
+			line_number += 1
+			return True
+		else:
+			return False
 
 	# TYPECAST
 	elif token=="MAEK":
 		if typecast(tokens[line_number], "IT"):
 			line_number += 1
 			return True
+		return False
 
 	# INPUT/OUTPUT
 	elif token=="VISIBLE":
-		print("VISIBLE")
+		return visible(1, "")
 	elif token=="GIMMEH":
-		print("GIMMEH")
+		return gimmeh(1)
 
 	# IF-THEN
 	elif token=="O RLY?":
@@ -639,7 +644,6 @@ def find_second_op(token_list):
 	return -1 # no second operand
 
 def is_valid_operation_call(token_list):
-	# print(token_list)
 	op_count = 0
 	ans_count = 0
 
@@ -786,7 +790,6 @@ def eval_op(token_list, typecast_to):
 	return result
 
 def operations(token_list, operation, typecast_to):
-	# print(token_list)
 	global line_number
 
 	if len(token_list) < 2:
@@ -956,6 +959,11 @@ def i_has_a():
 			symbols[l_value] = symbols[r_value]
 		elif eval_expr(line[3:]): # expression
 			symbols[l_value] = symbols["IT"]
+		elif line[3]=="SMOOSH": # for smoosh
+			if smoosh(4, ""): # attempt to smoosh and check if may error
+				symbols[l_value] = symbols["IT"] # update lhs
+			else:
+				return False # return false agad bc there's already an error message sa SMOOSH
 		else:
 			output_console("error::in the literal, variable, or expression at: " + get_line(line_number))
 			return False
@@ -996,7 +1004,7 @@ def assignment():
 		output_console("error::expected R or IS NOW A at: " + get_line(line_number))
 		return False
 
-	# check if rhs is literal, variable, typecast, or expr
+	# check if rhs is literal, variable, typecast, or expr / smoosh
 	rhs = line[2]
 	value = ''
 	eol = False
@@ -1010,6 +1018,11 @@ def assignment():
 	elif rhs=="MAEK":
 		if not typecast(line[2:], lhs):
 			return False
+	elif rhs=="SMOOSH":
+		if smoosh(3, ""): # attempt to smoosh and check if may error
+			symbols[lhs] = symbols["IT"] # update lhs
+		else:
+			return False # return false agad bc there's already an error message sa SMOOSH
 	elif eval_expr(line[2:]):
 		symbols[lhs] = symbols["IT"]
 	else:
@@ -1092,8 +1105,6 @@ def typecast(token_list, dest):
 	elif len(token_list[1:expr_end])!=1 or value not in symbols.keys(): # variable
 		output_console("error::in expression or variable at: " + get_line(line_number))
 		return False
-	# else:
-	# 	print(value)
 
 	value = symbols[value]
 
@@ -1121,11 +1132,172 @@ def typecast(token_list, dest):
 
 ###MANIFESTING WALA NA BUGS YEAH###
 
+# creates a new window to get user input.
+def user_input():
+	symbols["IT"] = askstring("Input", "Input here: ")
+	if symbols["IT"]==None:
+		symbols["IT"] = "NOOB"
 
+def count_ops(line): # for nested operations only
+	operations = 0
+	valid_ops = ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF", "AN", "ANY OF", "ALL OF", "BIGGR OF", "SMALLR OF", "NOT", "BOTH SAEM", "DIFFRINT"]
 
+	for i in range(len(line)): # count the number of operations, an existing var, or a literal
+		token = line[i]
 
+		if token in valid_ops: # if the token is a valid operation:
+			operations += 1
+		# if token is not a valid operation but is a literal or a valid var
+		elif (is_literal(token) in ["NUMBR", "NUMBAR", "TROOF"] or token in symbols.keys()) and i>0:
+			# if the previous token is a valid operation OR AN, we also add that to the count
+			if line[i-1] in valid_ops or line[i-1] == "AN":
+				operations += 1
+			else: # if previous token is NOT an AN, end the loop
+				break
 
+	return operations
 
+##################### VISIBLE /  GIMMEH / SMOOSH ############################
+def visible(index, to_print):
+	global line_number
+
+	# read the print arguments
+	# need to determine if variable identifier, expr, literal, another argument + identifier, another argument + expr, another arg + literal
+	token = get_current_token(index)
+	line = tokens[line_number][index:] # get the rest of the line
+	tokens_consumed = count_ops(line) # count tokens consumed
+	end_index = tokens_consumed + index # this will be the end index if it's an expression. if not expr, then end_index = index
+
+	if not token: # if EOL / this is the base case
+
+		output_console(to_print) # print to console the entire created string.
+		line_number += 1 # update line number and return true
+		return True
+
+	# check if identifier, expr, or literal
+	if token in symbols.keys():
+		# if the token is a variable, numbr, numbar, or troof
+
+		# output the variable value in console.
+		return visible(index + 1, to_print + str(symbols[token]))
+
+	elif token == "SMOOSH":
+		if smoosh(index + 1, ""):
+			unread_line = tokens[line_number][index:].copy()
+
+			if not "MKAY" in unread_line: # if walang mkay, this means na walang error sa smoosh and we are at the end of the line
+				output_console(to_print + symbols["IT"]) # print everything + yung nasmoosh
+				line_number += 1
+				return True
+
+			# if may mkay pa, find it and update the index accordingly.
+			tokens_consumed = unread_line.index("MKAY") # find the index of the next mkay in unread line, and that's the emount of tokens consumed
+			index += tokens_consumed # update index
+
+			return visible(index + 1, to_print + str(symbols["IT"])) # continue visible to the next token AFTER mkay
+		else:
+			return False # if smoosh fails we have an error message within the smoosh function
+
+	# LITERALS / YARN
+	elif is_literal(token) == "NUMBR" or is_literal(token) == "NUMBAR" or is_literal(token) == "TROOF":
+
+		return visible(index + 1, to_print + str(token))
+
+	elif is_literal(token) == "YARN":
+
+		if get_current_token(index + 2) != "\"": # check the token after the yarn literal (+1 is yarn literal, +2 is closing del)
+			output_console("error::unexpected EOL at: " + get_line(line_number)) # if walang closing del
+			return False
+
+		# if merong closing del, move on to the next token after the delim
+		return visible(index + 3, to_print + get_current_token(index + 1)) # +3 to go to the next index/token after the delim
+
+	# EXPR
+	elif end_index > index and eval_expr(tokens[line_number][index:end_index]):
+
+		index += tokens_consumed # update index
+
+		return visible(index, to_print + str(symbols["IT"]))
+
+	# not in variables or anything else
+	else:
+		output_console("error at: " + get_line(line_number) + " (" + token + " is not valid or recognized" + ")")
+		return False
+
+def gimmeh(index):
+	global symbols, line_number
+
+	# check if the index after the current is less than the length of the line, meaning theres more than one token in the line
+	if index + 1 < len(tokens[line_number]):
+
+		output_console("error at: " + get_line(line_number) + " (GIMMEH only requires one variable)")
+		return False
+
+	else:
+		# get the current token
+		token = get_current_token(index)
+
+		if token in symbols:
+
+			user_input()
+			symbols[token] = symbols["IT"]
+
+		else:
+			# if wala yung token sa declared variables dict
+			output_console("error at: " + get_line(line_number) + " (" + token + " is an undeclared variable.")
+			return False
+
+	# update line and return true
+	line_number += 1
+	return True
+
+def smoosh(index, to_smoosh):
+	global symbols, line_number
+
+	string = get_current_token(index)
+
+	if not string: # if eol right after SMOOSH; meaning walang laman
+		output_console("error at: " + get_line(line_number) + " (Unexpected EOL)")
+		return False
+
+	if string in symbols.keys():
+
+		to_smoosh += str(symbols[string])
+
+	elif is_literal(string)=="NUMBR" or is_literal(string)=="NUMBAR" or is_literal(string)=="TROOF":
+
+		to_smoosh += str(string)
+
+	elif is_literal(string)=="YARN":
+
+		if get_current_token(index + 2) != "\"": # check the tokens after the yarn literal (+1 is yarn literal, +2 is closing del)
+			output_console("error::unexpected EOL at: " + get_line(line_number))
+			return False
+
+		to_smoosh += get_current_token(index + 1) # get the token after the opening delim
+		index += 2 # go to the closing delim
+
+	else: # if hindi valid
+		output_console("error::cannot SMOOSH. Expected symbol, YARN, or literal, got " + string + " at: " + get_line(line_number))
+		return False
+
+	next_token = get_current_token(index + 1)
+
+	# if next token is a new line OR is mkay
+	if not next_token or next_token == "MKAY":
+
+		symbols["IT"] = to_smoosh # lagay sa it yung to_smoosh
+
+		return True # return true yung everything
+
+	elif next_token == "AN": # if an yung next token, we move on to the next
+
+		return smoosh(index + 2, to_smoosh) # pass the index AFTER AN, kaya +2
+
+	else:
+		# if walang an
+		output_console("error at: " + get_line(line_number) + " (Expected AN, got " + next_token + ")")
+		return False
 
 ###MANIFESTING WALA NA BUGS YEAH###
 
@@ -1256,7 +1428,7 @@ def if_then():
 
 		# check the value of IT
 		it = symbols["IT"]
-		fail = ['', 0, "NOOB"]
+		fail = ['', 0, 0.0, "NOOB", "FAIL"]
 
 		if it in fail: # FALSE
 			if has_no_wai: # has NO WAI clause
