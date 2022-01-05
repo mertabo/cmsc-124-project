@@ -500,6 +500,7 @@ def is_valid_identifier(token):
 
 def eval_expr(token_list):
 	if len(token_list) < 2:
+		output_console("error::missing operand/s at: " + get_line(line_number))
 		return False
 
 	token = token_list[0]
@@ -508,7 +509,7 @@ def eval_expr(token_list):
 	if token=="SUM OF":
 		if not is_valid_operation_call(token_list):
 			return False
-		result = arithmetic(token_list, "+")
+		result = operations(token_list, "+", True)
 		if result or result==0:
 			return True
 		else:
@@ -516,7 +517,7 @@ def eval_expr(token_list):
 	elif token=="DIFF OF":
 		if not is_valid_operation_call(token_list):
 			return False
-		result = arithmetic(token_list, "-")
+		result = operations(token_list, "-", True)
 		if result or result==0:
 			return True
 		else:
@@ -524,7 +525,7 @@ def eval_expr(token_list):
 	elif token=="PRODUKT OF":
 		if not is_valid_operation_call(token_list):
 			return False
-		result = arithmetic(token_list, "*")
+		result = operations(token_list, "*", True)
 		if result or result==0:
 			return True
 		else:
@@ -532,7 +533,7 @@ def eval_expr(token_list):
 	elif token=="QUOSHUNT OF":
 		if not is_valid_operation_call(token_list):
 			return False
-		result = arithmetic(token_list, "/")
+		result = operations(token_list, "/", True)
 		if result or result==0:
 			return True
 		else:
@@ -540,7 +541,7 @@ def eval_expr(token_list):
 	elif token=="MOD OF":
 		if not is_valid_operation_call(token_list):
 			return False
-		result = arithmetic(token_list, "%")
+		result = operations(token_list, "%", True)
 		if result or result==0:
 			return True
 		else:
@@ -548,7 +549,7 @@ def eval_expr(token_list):
 	elif token=="BIGGR OF":
 		if not is_valid_operation_call(token_list):
 			return False
-		result = arithmetic(token_list, "BIGGR")
+		result = operations(token_list, "BIGGR", True)
 		if result or result==0:
 			return True
 		else:
@@ -556,7 +557,7 @@ def eval_expr(token_list):
 	elif token=="SMALLR OF":
 		if not is_valid_operation_call(token_list):
 			return False
-		result = arithmetic(token_list, "SMALLR")
+		result = operations(token_list, "SMALLR", True)
 		if result or result==0:
 			return True
 		else:
@@ -564,23 +565,59 @@ def eval_expr(token_list):
 
 	# BOOLEAN OPERATIONS
 	elif token=="BOTH OF":
-		print("BOTH OF")
+		if not is_valid_operation_call(token_list):
+			return False
+		result = operations(token_list, "and", "TROOF")
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="EITHER OF":
-		print("EITHER OF")
+		if not is_valid_operation_call(token_list):
+			return False
+		result = operations(token_list, "or", "TROOF")
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="WON OF":
-		print("WON OF")
+		if not is_valid_operation_call(token_list):
+			return False
+		result = operations(token_list, "^", "TROOF")
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="NOT":
-		print("NOT")
+		if not is_valid_operation_call(token_list):
+			return False
+		result = operations(token_list, "NOT", "TROOF")
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="ALL OF":
-		print("ALL OF")
+		return any_all(token_list)
 	elif token=="ANY OF":
-		print("ANY OF")
+		return any_all(token_list)
 		
 	# COMPARISON OPERATIONS
 	elif token=="BOTH SAEM":
-		print("BOTH SAEM")
+		if not is_valid_operation_call(token_list):
+			return False
+		result = operations(token_list, "==", False)
+		if result or result==0:
+			return True
+		else:
+			return False
 	elif token=="DIFFRINT":
-		print("DIFFRINT")
+		if not is_valid_operation_call(token_list):
+			return False
+		result = operations(token_list, "!=", False)
+		if result or result==0:
+			return True
+		else:
+			return False
 
 	return True
 
@@ -667,40 +704,59 @@ def is_valid_operation_call(token_list):
 	output_console("error at: " + get_line(line_number))
 	return False # some operator is not binary
 
-def eval_op(token_list):
+def eval_op(token_list, typecast_to):
+	# typecast_to = False, TROOF, True (numbr/numbar)
 	# evaluates the operand
 	operand = token_list[0]
 	literal = is_literal(operand)
 	result = 0
 	length = len(token_list)
 
+
 	if literal: # literal
-		if literal=="NUMBR" or literal=="NUMBAR":
+		if (literal=="NUMBR" or literal=="NUMBAR") and typecast_to!="TROOF":
 			result = operand
+		elif literal=="YARN" and typecast_to=="TROOF":
+			result = "FAIL" if token_list[1]!='"' else "WIN"
+		elif typecast_to=="TROOF":
+			result = cast(operand, "TROOF")
+			if bool(result) and result==False:
+				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
+				return False
 		elif literal=="YARN" and "." in operand:
 			result = cast(token_list[1], "NUMBAR")
 			if bool(result) and result==False:
-				print("1")
 				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
 				return False
 		elif literal=="YARN":
 			result = cast(token_list[1], "NUMBR")
 			if bool(result) and result==False:
-				print("2")
-
 				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
 				return False
 		else:
 			result = cast(operand, "NUMBR")
 			if bool(result) and result==False:
-				print("3")
-
 				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
 				return False
 
 	elif operand in symbols.keys(): # variable
 		result = symbols[operand]
-		if type(result)==str and "." in result:
+
+		if typecast_to==False:
+			pass
+		elif typecast_to=="TROOF":
+			if result in ["WIN", "FAIL"]:
+				pass
+			elif result=="NOOB":
+				result = "FAIL"
+			elif type(result)==str:
+				result = "FAIL" if result=="" else "WIN"
+			else:
+				result = cast(result, "TROOF")
+				if bool(result) and result==False:
+					output_console("error::operand cannot be typecasted at: " + get_line(line_number))
+					return False	
+		elif type(result)==str and "." in result:
 			result = cast(result, "NUMBAR")
 			if bool(result) and result==False:
 				output_console("error::operand cannot be typecasted at: " + get_line(line_number))
@@ -714,7 +770,21 @@ def eval_op(token_list):
 	elif eval_expr(token_list): # expression
 		result = symbols["IT"]
 
-		if type(result)==str and "." in result:
+		if typecast_to==False:
+			pass
+		elif typecast_to=="TROOF":
+			if result in ["WIN", "FAIL"]:
+				pass
+			elif result=="NOOB":
+				result = "FAIL"
+			elif type(result)==str:
+				result = "FAIL" if result=="" else "WIN"
+			else:
+				result = cast(result, "TROOF")
+				if bool(result) and result==False:
+					output_console("error::operand cannot be typecasted at: " + get_line(line_number))
+					return False
+		elif type(result)==str and "." in result:
 			result = cast(result, "NUMBAR")
 			if bool(result) and result==False:
 				print("here")
@@ -728,57 +798,138 @@ def eval_op(token_list):
 
 	return result
 
-def arithmetic(token_list, operation):
+def operations(token_list, operation, typecast_to):
 	global line_number
 
-	if len(token_list) < 4:
-		output_console("error::expected an operand at: " + get_line(line_number))
+	if len(token_list) < 2:
+		output_console("error::missing operand at: " + get_line(line_number))
 		return False
 
 	# operands may be literal, var, expr of type NUMBR/NUMBAR
 	first_op = token_list[1]
+	index_second_op = 3
 
-	# find 2nd operand
-	index_second_op = find_second_op(token_list[1:])
+	# if NOT, no 2nd operand
+	if operation!="NOT":
+		# find 2nd operand
+		index_second_op = find_second_op(token_list[1:])
 
-	if index_second_op==-1:
-		output_console("error::expected an operand at: " + get_line(line_number))
-		return False
+		if index_second_op==-1:
+			output_console("error::expected an operand at: " + get_line(line_number))
+			return False
 
-	index_second_op += 2
-	if index_second_op >= len(token_list):
-		output_console("error::expected an operand at: " + get_line(line_number))
-		return False
+		index_second_op += 2
+		if index_second_op >= len(token_list):
+			output_console("error::expected an operand at: " + get_line(line_number))
+			return False
 
-	second_op = token_list[index_second_op]
+		second_op = token_list[index_second_op]
 
-	# evaluate operands
-	rhs = eval_op(token_list[index_second_op:])
-	if bool(rhs) and rhs==False:
-		return False
+		# evaluate operands
+		rhs = eval_op(token_list[index_second_op:], typecast_to)
+		if bool(rhs) and rhs==False:
+			return False
 
-	end = index_second_op + 1
+		end = index_second_op + 1
 
-	del token_list[index_second_op:]
-	token_list.append(rhs)
+		del token_list[index_second_op:]
+		token_list.append(rhs)
+	else:
+		if first_op=='"':
+			index_second_op = 5
 
-	lhs = eval_op(token_list[1:index_second_op-1])
+	lhs = eval_op(token_list[1:index_second_op-1], typecast_to)
 	if bool(lhs) and lhs==False:
 		return False
+
+	if typecast_to=="TROOF":
+		lhs = True if lhs=="WIN" else False
 
 	result = 0
 	if operation=="BIGGR":
 		result = eval("max("+str(lhs)+","+str(rhs)+")")
 	elif operation=="SMALLR":
 		result = eval("min("+str(lhs)+","+str(rhs)+")")
+	elif operation=="NOT":
+		result = eval("not "+str(lhs))
 	else:
-		result = eval(str(lhs)+operation+str(rhs))
+		result = eval(str(lhs)+" "+operation+" "+str(rhs))
 	
+	if typecast_to=="TROOF":
+		result = "WIN" if result==True else "FAIL"
+
 	symbols["IT"] = result
 	return result
 
+def any_all(token_list):
+	# check if self nesting
+	if "ALL OF" in token_list[1:] or "ANY OF" in token_list[1:]:
+		output_console("error::nesting of ALL/ANY OF is not allowed at: " + get_line(line_number))
+		return False
 
-###END###
+	# find end
+	index_mkay = find_end_any_all(token_list)
+	if index_mkay < 0:
+		output_console("error::expected MKAY at: " + get_line(line_number))
+		return False
+
+	# check if there's unexpected token/s after MKAY
+	if index_mkay!=len(token_list)-1:
+		output_console("error::expected EOL at: " + get_line(line_number))
+		return False
+
+	# check if token before MKAY is literal/variable
+	if not is_literal(token_list[index_mkay-1]) and not token_list[index_mkay-1] in symbols.keys():
+		output_console("error::expected an operand at: " + get_line(line_number))
+		return False
+
+	# check if second token is not AN
+	if token_list[1]=="AN":
+		output_console("error::expected an operand at: " + get_line(line_number))
+		return False		
+
+	# get operands
+	operands = []
+	start = 1
+	end = 0
+	nested = []
+	ops = ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF", "BOTH SAEM", "DIFFRINT"]
+
+	for token in token_list:
+		if token in ops:
+			nested.append(True)
+		if token=="AN" and nested:
+			nested.pop()
+		elif token=="AN" or token=="MKAY":
+			operands.append(token_list[start:end])
+			start = end+1
+		end += 1
+
+	# evaluate the operands
+	evaluated_ops = []
+
+	for op in operands:
+		result = eval_op(op, "TROOF")
+		if result:
+			evaluated_ops.append(result)
+		else:
+			# output_console("error at: " + get_line(line_number))
+			return False
+
+	# evaluate operands
+	result = ''
+	operation = "and" if token_list[0]=="ALL OF" else "or"
+
+	for i in range(len(evaluated_ops)):
+		evaluated_ops[i] = True if evaluated_ops[i]=="WIN" else False
+		result += str(evaluated_ops[i]) 
+		if i != len(evaluated_ops)-1:
+			result += " " + operation + " "
+
+	symbols["IT"] = eval(result)
+	return True
+
+###END OF OPERATIONS###
 
 def i_has_a():
 	global line_number
