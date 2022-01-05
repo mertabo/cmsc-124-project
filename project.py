@@ -413,6 +413,8 @@ def statement(is_code_block):
 
 	# OPERATIONS
 	elif token in ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF", "NOT", "ALL OF", "ANY OF", "BOTH SAEM", "DIFFRINT"]:
+		if len(tokens[line_number]) < 2:
+			return False
 		if eval_expr(tokens[line_number]):
 			line_number += 1
 			return True
@@ -499,10 +501,6 @@ def is_valid_identifier(token):
 	return True
 
 def eval_expr(token_list):
-	if len(token_list) < 2:
-		output_console("error::missing operand/s at: " + get_line(line_number))
-		return False
-
 	token = token_list[0]
 
 	# ARITHMETIC OPERATIONS
@@ -510,92 +508,81 @@ def eval_expr(token_list):
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "+", True)
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="DIFF OF":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "-", True)
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="PRODUKT OF":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "*", True)
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="QUOSHUNT OF":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "/", True)
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="MOD OF":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "%", True)
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="BIGGR OF":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "BIGGR", True)
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="SMALLR OF":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "SMALLR", True)
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 
 	# BOOLEAN OPERATIONS
 	elif token=="BOTH OF":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "and", "TROOF")
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="EITHER OF":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "or", "TROOF")
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="WON OF":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "^", "TROOF")
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="NOT":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "NOT", "TROOF")
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="ALL OF":
 		return any_all(token_list)
 	elif token=="ANY OF":
@@ -606,18 +593,16 @@ def eval_expr(token_list):
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "==", False)
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 	elif token=="DIFFRINT":
 		if not is_valid_operation_call(token_list):
 			return False
 		result = operations(token_list, "!=", False)
-		if result or result==0:
-			return True
-		else:
+		if bool(result) and result==False:
 			return False
+		return True
 
 	return True
 
@@ -633,7 +618,7 @@ def find_second_op(token_list):
 		return -1
 
 	count = 1
-	ops = ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF"]
+	ops = ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF", "BOTH SAEM", "DIFFRINT"]
 	others = ["ALL OF", "ANY OF"]
 	i = 0
 	end = len(token_list)
@@ -654,19 +639,21 @@ def find_second_op(token_list):
 	return -1 # no second operand
 
 def is_valid_operation_call(token_list):
+	# print(token_list)
 	op_count = 0
 	ans_count = 0
 
-	ops = ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF"]
+	ops = ["SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF", "BOTH OF", "EITHER OF", "WON OF", "BOTH SAEM", "DIFFRINT"]
 	others = ["ANY OF", "ALL OF"]
 	i = 0
 	end = len(token_list)
 
 	# end must be literal/variable
-	if not is_literal(token_list[-1]):
+	if not is_literal(token_list[-1]) and not token_list[-1] in symbols.keys():
 		output_console("error at: " + get_line(line_number))
 		return False
 
+	# check if binary operations are binary
 	while i < end:
 		if token_list[i] in ops:
 			op_count += 1
@@ -709,9 +696,8 @@ def eval_op(token_list, typecast_to):
 	# evaluates the operand
 	operand = token_list[0]
 	literal = is_literal(operand)
-	result = 0
+	result = False
 	length = len(token_list)
-
 
 	if literal: # literal
 		if (literal=="NUMBR" or literal=="NUMBAR") and typecast_to!="TROOF":
@@ -781,6 +767,7 @@ def eval_op(token_list, typecast_to):
 				result = "FAIL" if result=="" else "WIN"
 			else:
 				result = cast(result, "TROOF")
+
 				if bool(result) and result==False:
 					output_console("error::operand cannot be typecasted at: " + get_line(line_number))
 					return False
@@ -799,6 +786,7 @@ def eval_op(token_list, typecast_to):
 	return result
 
 def operations(token_list, operation, typecast_to):
+	# print(token_list)
 	global line_number
 
 	if len(token_list) < 2:
@@ -808,6 +796,7 @@ def operations(token_list, operation, typecast_to):
 	# operands may be literal, var, expr of type NUMBR/NUMBAR
 	first_op = token_list[1]
 	index_second_op = 3
+	rhs = False
 
 	# if NOT, no 2nd operand
 	if operation!="NOT":
@@ -842,8 +831,11 @@ def operations(token_list, operation, typecast_to):
 	if bool(lhs) and lhs==False:
 		return False
 
+	# for boolean operations
 	if typecast_to=="TROOF":
 		lhs = True if lhs=="WIN" else False
+		if rhs:
+			rhs = True if rhs=="WIN" else False
 
 	result = 0
 	if operation=="BIGGR":
@@ -852,10 +844,12 @@ def operations(token_list, operation, typecast_to):
 		result = eval("min("+str(lhs)+","+str(rhs)+")")
 	elif operation=="NOT":
 		result = eval("not "+str(lhs))
+	elif typecast_to==False:
+		result = lhs==rhs if operation=="==" else lhs!=rhs
 	else:
 		result = eval(str(lhs)+" "+operation+" "+str(rhs))
 	
-	if typecast_to=="TROOF":
+	if typecast_to=="TROOF" or typecast_to==False:
 		result = "WIN" if result==True else "FAIL"
 
 	symbols["IT"] = result
@@ -910,13 +904,12 @@ def any_all(token_list):
 
 	for op in operands:
 		result = eval_op(op, "TROOF")
-		if result:
-			evaluated_ops.append(result)
-		else:
-			# output_console("error at: " + get_line(line_number))
+		if bool(result) and result==False:
 			return False
+		evaluated_ops.append(result)
+			# output_console("error at: " + get_line(line_number))
 
-	# evaluate operands
+	# make operands True/False
 	result = ''
 	operation = "and" if token_list[0]=="ALL OF" else "or"
 
@@ -1099,6 +1092,8 @@ def typecast(token_list, dest):
 	elif len(token_list[1:expr_end])!=1 or value not in symbols.keys(): # variable
 		output_console("error::in expression or variable at: " + get_line(line_number))
 		return False
+	# else:
+	# 	print(value)
 
 	value = symbols[value]
 
@@ -1113,15 +1108,27 @@ def typecast(token_list, dest):
 		elif type_result=="YARN":
 			symbols[dest] = '' # store the result to dest
 			return True
-	
+
 	result = cast(value, type_result) # typecast
 
-	if result==False: # typecast failed
+	if bool(result) and result==False: # typecast failed
 		output_console("error::cannot be typecasted at: " + get_line(line_number))
 		return False	
 
 	symbols[dest] = result # store the result to dest
 	return True
+
+
+###MANIFESTING WALA NA BUGS YEAH###
+
+
+
+
+
+
+
+###MANIFESTING WALA NA BUGS YEAH###
+
 
 ###CODE BLOCKS###
 
@@ -1212,10 +1219,6 @@ def validate_blocks(start, end): # checks if blocks are valid and non-empty
 	return [True, end]
 
 def if_then():
-	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
-	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
-	# MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE MEBBE
-
 	global line_number, tokens
 
 	# O RLY?
